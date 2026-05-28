@@ -1,0 +1,33 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Dependencies
+node_modules/
+
+# Production Build Directories
+dist/
+dist-ssr/
+
+# Environment Variables and Sensitive Files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Supabase local config
+supabase/.temp/
+
+# Editor/System directories
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
