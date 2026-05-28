@@ -11,15 +11,44 @@ export interface Pedido {
   clienteNombre?: string;
 }
 
+interface PedidoRow {
+  id: string;
+  cliente_id: string;
+  material: Pedido['material'];
+  volumen_m3: number | string;
+  destino: string;
+  estado: Pedido['estado'];
+  created_at: string;
+  usuarios?: Array<{
+    nombre: string | null;
+  }> | null;
+}
+
+function mapPedidoRow(pedido: PedidoRow): Pedido {
+  return {
+    id: pedido.id,
+    clienteId: pedido.cliente_id,
+    material: pedido.material,
+    volumenM3: Number(pedido.volumen_m3),
+    destino: pedido.destino,
+    estado: pedido.estado,
+    createdAt: pedido.created_at,
+    clienteNombre: pedido.usuarios?.[0]?.nombre || 'Cliente Desconocido',
+  };
+}
+
 export const ordersService = {
-  /**
-   * Obtiene la lista completa de pedidos, incluyendo el nombre de la constructora/cliente.
-   */
   async getOrders(): Promise<Pedido[]> {
     const { data, error } = await supabase
       .from('pedidos')
       .select(`
-        *,
+        id,
+        cliente_id,
+        material,
+        volumen_m3,
+        destino,
+        estado,
+        created_at,
         usuarios:cliente_id (
           nombre
         )
@@ -31,53 +60,32 @@ export const ordersService = {
       throw error;
     }
 
-    return (data || []).map((p: any) => ({
-      id: p.id,
-      clienteId: p.cliente_id,
-      material: p.material,
-      volumenM3: Number(p.volumen_m3),
-      destino: p.destino,
-      estado: p.estado,
-      createdAt: p.created_at,
-      clienteNombre: p.usuarios?.nombre || 'Cliente Desconocido'
-    }));
+    return (data as PedidoRow[] | null)?.map(mapPedidoRow) ?? [];
   },
 
-  /**
-   * Crea un nuevo pedido de material.
-   */
   async createOrder(order: Omit<Pedido, 'id' | 'createdAt' | 'estado'>): Promise<Pedido> {
     const { data, error } = await supabase
       .from('pedidos')
-      .insert([{
-        cliente_id: order.clienteId,
-        material: order.material,
-        volumen_m3: order.volumenM3,
-        destino: order.destino.trim(),
-        estado: 'PENDIENTE'
-      }])
-      .select()
-      .single();
+      .insert([
+        {
+          cliente_id: order.clienteId,
+          material: order.material,
+          volumen_m3: order.volumenM3,
+          destino: order.destino.trim(),
+          estado: 'PENDIENTE',
+        },
+      ])
+      .select('id, cliente_id, material, volumen_m3, destino, estado, created_at')
+      .single<PedidoRow>();
 
     if (error) {
       console.error('Error al crear pedido:', error);
       throw error;
     }
 
-    return {
-      id: data.id,
-      clienteId: data.cliente_id,
-      material: data.material,
-      volumenM3: Number(data.volumen_m3),
-      destino: data.destino,
-      estado: data.estado,
-      createdAt: data.created_at
-    };
+    return mapPedidoRow(data);
   },
 
-  /**
-   * Actualiza el estado de un pedido (por ejemplo, cancelarlo).
-   */
   async updateOrderState(id: string, estado: Pedido['estado']): Promise<void> {
     const { error } = await supabase
       .from('pedidos')
@@ -88,5 +96,5 @@ export const ordersService = {
       console.error('Error al actualizar estado del pedido:', error);
       throw error;
     }
-  }
+  },
 };

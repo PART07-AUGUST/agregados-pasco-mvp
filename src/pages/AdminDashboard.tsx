@@ -8,7 +8,6 @@ import {
   LogOut, 
   Plus, 
   Activity, 
-  Database,
   Scale
 } from 'lucide-react';
 import { useAuthStore } from '../shared/stores/useAuthStore';
@@ -24,6 +23,7 @@ import { VehicleForm } from '../features/vehiculos/components/VehicleForm';
 import { OrdersList } from '../features/pedidos/components/OrdersList';
 import { OrderForm } from '../features/pedidos/components/OrderForm';
 import { TripAssignModal } from '../features/viajes/components/TripAssignModal';
+import { getErrorMessage } from '../shared/utils/errors';
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -62,21 +62,27 @@ export function AdminDashboard() {
       setVehicles(vData);
       setOrders(oData);
       setTrips(tData);
-    } catch (e: any) {
-      console.error('Error cargando recursos en dashboard:', e);
-      setError('Ocurrió un error al descargar la información logística desde Supabase.');
+    } catch (loadError: unknown) {
+      console.error('Error cargando recursos en dashboard:', loadError);
+      setError(getErrorMessage(loadError, 'Ocurrió un error al descargar la información logística desde Supabase.'));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    refreshData();
+    const timeoutId = window.setTimeout(() => {
+      void refreshData();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, []);
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login', { replace: true });
+    navigate('/', { replace: true });
   };
 
   // CRUD handlers: Vehículos
@@ -131,8 +137,8 @@ export function AdminDashboard() {
             </div>
             <div>
               <span className="text-[10px] font-bold text-amber-500 tracking-widest uppercase">Panel de Control</span>
-              <h1 className="text-md font-extrabold tracking-tight text-white flex items-center gap-1.5">
-                AGREGADOS <span className="text-slate-400 font-light">ADMINISTRADOR</span>
+              <h1 className="text-md font-extrabold tracking-tight text-white">
+                AGREGADOS <span className="text-slate-400 font-light">SIS</span>
               </h1>
             </div>
           </div>
@@ -226,7 +232,7 @@ export function AdminDashboard() {
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center space-y-4">
             <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
-            <p className="text-xs text-slate-500 font-mono tracking-widest uppercase">Cargando datos desde Supabase...</p>
+            <p className="text-xs text-slate-500 font-mono tracking-widest uppercase">Cargando panel de control...</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -278,10 +284,10 @@ export function AdminDashboard() {
                                 {t.destino}
                               </td>
                               <td className="py-3.5 px-4 font-mono text-slate-400">
-                                {t.pesoEntradaKg ? `${t.pesoEntradaKg} ton` : '--'}
+                                {t.pesoEntradaKg ? `${(t.pesoEntradaKg / 1000).toFixed(2)} t` : '--'}
                               </td>
                               <td className="py-3.5 px-4 font-mono text-slate-400">
-                                {t.pesoSalidaKg ? `${t.pesoSalidaKg} ton` : '--'}
+                                {t.pesoSalidaKg ? `${(t.pesoSalidaKg / 1000).toFixed(2)} t` : '--'}
                               </td>
                               <td className="py-3.5 px-4">
                                 <span className={`px-2 py-0.5 rounded font-mono text-[9px] font-bold ${
@@ -307,7 +313,6 @@ export function AdminDashboard() {
                   )}
                   <div className="p-4 border-t border-slate-900 bg-slate-950/20 flex items-center justify-between text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
                     <span className="flex items-center gap-1.5"><Activity className="h-3.5 w-3.5 text-amber-500" /> Monitoreo de Despacho Logístico</span>
-                    <span className="flex items-center gap-1"><Database className="h-3.5 w-3.5 text-amber-500" /> Supabase Stream</span>
                   </div>
                 </div>
 
@@ -379,8 +384,8 @@ export function AdminDashboard() {
       {/* Footer */}
       <footer className="mt-auto border-t border-slate-900 bg-slate-950 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <span>© {new Date().getFullYear()} Agregados Pasco · Consola de Control de Flotas</span>
-          <span className="font-mono text-[10px] text-slate-600">SISTEMA TRANSACCIONAL SUPABASE</span>
+          <span>© {new Date().getFullYear()} Agregados SIS · Consola de Control de Flotas</span>
+          <span className="font-mono text-[10px] text-slate-600">OPERACIONES LOGISTICAS EN LINEA</span>
         </div>
       </footer>
 

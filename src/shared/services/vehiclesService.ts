@@ -1,19 +1,48 @@
 import { supabase } from './supabase';
 import type { Vehiculo } from '../types';
 
+interface VehiculoRow {
+  id: string;
+  placa: string;
+  marca: string;
+  modelo: string;
+  capacidad_m3: number | string;
+  conductor_id: string | null;
+  activo: boolean;
+  usuarios?: Array<{
+    nombre: string | null;
+  }> | null;
+}
+
 export interface VehiculoConConductor extends Vehiculo {
   conductorNombre?: string;
 }
 
+function mapVehiculoRow(vehicle: VehiculoRow): VehiculoConConductor {
+  return {
+    id: vehicle.id,
+    placa: vehicle.placa,
+    marca: vehicle.marca,
+    modelo: vehicle.modelo,
+    capacidadM3: Number(vehicle.capacidad_m3),
+    conductorId: vehicle.conductor_id ?? undefined,
+    activo: vehicle.activo,
+    conductorNombre: vehicle.usuarios?.[0]?.nombre || 'Sin conductor asignado',
+  };
+}
+
 export const vehiclesService = {
-  /**
-   * Obtiene la lista completa de vehículos de la flota, incluyendo el nombre del conductor asignado.
-   */
   async getVehicles(): Promise<VehiculoConConductor[]> {
     const { data, error } = await supabase
       .from('vehiculos')
       .select(`
-        *,
+        id,
+        placa,
+        marca,
+        modelo,
+        capacidad_m3,
+        conductor_id,
+        activo,
         usuarios:conductor_id (
           nombre
         )
@@ -25,56 +54,43 @@ export const vehiclesService = {
       throw error;
     }
 
-    return (data || []).map((v: any) => ({
-      id: v.id,
-      placa: v.placa,
-      marca: v.marca,
-      modelo: v.modelo,
-      capacidadM3: Number(v.capacidad_m3),
-      conductorId: v.conductor_id,
-      activo: v.activo,
-      conductorNombre: v.usuarios?.nombre || 'Sin conductor asignado'
-    }));
+    return (data as VehiculoRow[] | null)?.map(mapVehiculoRow) ?? [];
   },
 
-  /**
-   * Registra un nuevo vehículo en la flota.
-   */
   async createVehicle(vehicle: Omit<Vehiculo, 'id'>): Promise<Vehiculo> {
     const { data, error } = await supabase
       .from('vehiculos')
-      .insert([{
-        placa: vehicle.placa.trim().toUpperCase(),
-        marca: vehicle.marca.trim(),
-        modelo: vehicle.modelo.trim(),
-        capacidad_m3: vehicle.capacidadM3,
-        conductor_id: vehicle.conductorId || null,
-        activo: vehicle.activo
-      }])
-      .select()
-      .single();
+      .insert([
+        {
+          placa: vehicle.placa.trim().toUpperCase(),
+          marca: vehicle.marca.trim(),
+          modelo: vehicle.modelo.trim(),
+          capacidad_m3: vehicle.capacidadM3,
+          conductor_id: vehicle.conductorId || null,
+          activo: vehicle.activo,
+        },
+      ])
+      .select('id, placa, marca, modelo, capacidad_m3, conductor_id, activo')
+      .single<VehiculoRow>();
 
     if (error) {
       console.error('Error al crear vehículo:', error);
       throw error;
     }
 
-    return {
-      id: data.id,
-      placa: data.placa,
-      marca: data.marca,
-      modelo: data.modelo,
-      capacidadM3: Number(data.capacidad_m3),
-      conductorId: data.conductor_id,
-      activo: data.activo
-    };
+    return mapVehiculoRow(data);
   },
 
-  /**
-   * Actualiza los datos de un vehículo existente.
-   */
   async updateVehicle(id: string, vehicle: Partial<Vehiculo>): Promise<Vehiculo> {
-    const updateData: any = {};
+    const updateData: Partial<{
+      placa: string;
+      marca: string;
+      modelo: string;
+      capacidad_m3: number;
+      conductor_id: string | null;
+      activo: boolean;
+    }> = {};
+
     if (vehicle.placa !== undefined) updateData.placa = vehicle.placa.trim().toUpperCase();
     if (vehicle.marca !== undefined) updateData.marca = vehicle.marca.trim();
     if (vehicle.modelo !== undefined) updateData.modelo = vehicle.modelo.trim();
@@ -86,28 +102,17 @@ export const vehiclesService = {
       .from('vehiculos')
       .update(updateData)
       .eq('id', id)
-      .select()
-      .single();
+      .select('id, placa, marca, modelo, capacidad_m3, conductor_id, activo')
+      .single<VehiculoRow>();
 
     if (error) {
       console.error('Error al actualizar vehículo:', error);
       throw error;
     }
 
-    return {
-      id: data.id,
-      placa: data.placa,
-      marca: data.marca,
-      modelo: data.modelo,
-      capacidadM3: Number(data.capacidad_m3),
-      conductorId: data.conductor_id,
-      activo: data.activo
-    };
+    return mapVehiculoRow(data);
   },
 
-  /**
-   * Elimina (o da de baja física) un vehículo de la flota.
-   */
   async deleteVehicle(id: string): Promise<void> {
     const { error } = await supabase
       .from('vehiculos')
@@ -118,5 +123,5 @@ export const vehiclesService = {
       console.error('Error al eliminar vehículo:', error);
       throw error;
     }
-  }
+  },
 };

@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Truck, Users, X, Check, Loader2, AlertCircle } from 'lucide-react';
 import { tripsService } from '../../../shared/services/tripsService';
 import { supabase } from '../../../shared/services/supabase';
 import type { Pedido } from '../../../shared/services/ordersService';
+import { getErrorMessage } from '../../../shared/utils/errors';
 
 interface TripAssignModalProps {
   order: Pedido;
@@ -24,74 +25,91 @@ interface ConductorOption {
   dni: string;
 }
 
+interface ActiveTripRow {
+  vehiculo_id: string;
+  conductor_id: string;
+}
+
 export function TripAssignModal({ order, onSuccess, onCancel }: TripAssignModalProps) {
   const [vehiculos, setVehiculos] = useState<VehiculoOption[]>([]);
   const [conductores, setConductores] = useState<ConductorOption[]>([]);
-  
   const [selectedVehiculoId, setSelectedVehiculoId] = useState('');
   const [selectedConductorId, setSelectedConductorId] = useState('');
-
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadResources() {
+    let cancelled = false;
+
+    const loadResources = async () => {
       setFetching(true);
       setError(null);
+
       try {
-        // 1. Cargar vehículos activos y sin conductor asignado (o todos los activos)
-        const { data: vData, error: vErr } = await supabase
-          .from('vehiculos')
-          .select('id, placa, marca, modelo, capacidad_m3')
-          .eq('activo', true)
-          .order('placa', { ascending: true });
+        const [{ data: vData, error: vErr }, { data: cData, error: cErr }, { data: activeTrips, error: activeErr }] =
+          await Promise.all([
+            supabase.from('vehiculos').select('id, placa, marca, modelo, capacidad_m3').eq('activo', true).order('placa', { ascending: true }),
+            supabase.from('usuarios').select('id, nombre, dni').eq('rol', 'CONDUCTOR').order('nombre', { ascending: true }),
+            supabase.from('viajes').select('vehiculo_id, conductor_id').in('estado', ['PENDIENTE', 'EN_CAMINO', 'EN_BALANZA']),
+          ]);
 
         if (vErr) throw vErr;
-
-        // 2. Cargar conductores activos
-        const { data: cData, error: cErr } = await supabase
-          .from('usuarios')
-          .select('id, nombre, dni')
-          .eq('rol', 'CONDUCTOR')
-          .order('nombre', { ascending: true });
-
         if (cErr) throw cErr;
+        if (activeErr) throw activeErr;
+        if (cancelled) return;
 
-        setVehiculos((vData || []).map(v => ({
-          id: v.id,
-          placa: v.placa,
-          marca: v.marca,
-          modelo: v.modelo,
-          capacidadM3: Number(v.capacidad_m3)
-        })));
-        
-        setConductores(cData || []);
-      } catch (e: any) {
-        console.error('Error al cargar recursos de despacho:', e);
-        setError('Ocurrió un error al cargar la flota o los conductores.');
+        const activeVehicleIds = new Set((activeTrips as ActiveTripRow[] | null)?.map((trip) => trip.vehiculo_id) ?? []);
+        const activeDriverIds = new Set((activeTrips as ActiveTripRow[] | null)?.map((trip) => trip.conductor_id) ?? []);
+
+        setVehiculos(
+          ((vData as Array<{ id: string; placa: string; marca: string; modelo: string; capacidad_m3: number | string }> | null) ?? [])
+            .filter((vehicle) => !activeVehicleIds.has(vehicle.id))
+            .map((vehicle) => ({
+              id: vehicle.id,
+              placa: vehicle.placa,
+              marca: vehicle.marca,
+              modelo: vehicle.modelo,
+              capacidadM3: Number(vehicle.capacidad_m3),
+            }))
+        );
+
+        setConductores(
+          ((cData as ConductorOption[] | null) ?? []).filter((driver) => !activeDriverIds.has(driver.id))
+        );
+      } catch (loadError: unknown) {
+        console.error('Error al cargar recursos de despacho:', loadError);
+        setError(getErrorMessage(loadError, 'Ocurrió un error al cargar la flota o los conductores.'));
       } finally {
-        setFetching(false);
+        if (!cancelled) {
+          setFetching(false);
+        }
       }
-    }
-    loadResources();
+    };
+
+    void loadResources();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleAssign = async () => {
     setError(null);
+
     if (!selectedVehiculoId || !selectedConductorId) {
       setError('Por favor, selecciona tanto un vehículo como un conductor.');
       return;
     }
 
     setLoading(true);
+
     try {
-      // Llamar al RPC transaccional asignar_viaje
       await tripsService.assignTrip(order.id, selectedVehiculoId, selectedConductorId);
       onSuccess();
-    } catch (err: any) {
-      console.error('Error al asignar viaje:', err);
-      setError(err.message || 'Error de base de datos al realizar la transacción.');
+    } catch (assignError: unknown) {
+      console.error('Error al asignar viaje:', assignError);
+      setError(getErrorMessage(assignError, 'Error de base de datos al realizar la transacción.'));
     } finally {
       setLoading(false);
     }
@@ -99,19 +117,14 @@ export function TripAssignModal({ order, onSuccess, onCancel }: TripAssignModalP
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      
-      {/* Contenedor del Modal */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full relative space-y-5 shadow-2xl selection:bg-amber-500 selection:text-slate-950">
-        
-        {/* Botón Cerrar */}
-        <button 
+        <button
           onClick={onCancel}
           className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-slate-400 hover:text-white active:scale-95 transition-all cursor-pointer"
         >
           <X className="h-4 w-4" />
         </button>
 
-        {/* Cabecera */}
         <div className="flex items-center space-x-2.5 border-b border-slate-800 pb-3">
           <div className="p-1.5 bg-amber-500/10 text-amber-500 rounded-lg">
             <Truck className="h-5 w-5" />
@@ -122,7 +135,6 @@ export function TripAssignModal({ order, onSuccess, onCancel }: TripAssignModalP
           </div>
         </div>
 
-        {/* Detalle del Pedido */}
         <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-900 text-[11px] space-y-2">
           <div className="flex justify-between items-center text-xs">
             <span className="font-bold text-slate-300">Cliente:</span>
@@ -138,7 +150,6 @@ export function TripAssignModal({ order, onSuccess, onCancel }: TripAssignModalP
           </div>
         </div>
 
-        {/* Mensaje de Error */}
         {error && (
           <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs flex items-start space-x-2">
             <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
@@ -153,14 +164,12 @@ export function TripAssignModal({ order, onSuccess, onCancel }: TripAssignModalP
           </div>
         ) : (
           <div className="space-y-4 text-xs">
-            
-            {/* Selector de Vehículo */}
             <div className="space-y-1">
               <label className="font-semibold text-slate-400 flex items-center gap-1">
                 <Truck className="h-3.5 w-3.5 text-amber-500" />
                 <span>1. Selecciona Volquete de Flota Activa *</span>
               </label>
-              <select 
+              <select
                 value={selectedVehiculoId}
                 onChange={(e) => setSelectedVehiculoId(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2.5 outline-none text-white text-xs cursor-pointer"
@@ -174,13 +183,12 @@ export function TripAssignModal({ order, onSuccess, onCancel }: TripAssignModalP
               </select>
             </div>
 
-            {/* Selector de Conductor */}
             <div className="space-y-1">
               <label className="font-semibold text-slate-400 flex items-center gap-1">
                 <Users className="h-3.5 w-3.5 text-amber-500" />
                 <span>2. Selecciona Conductor Asignado *</span>
               </label>
-              <select 
+              <select
                 value={selectedConductorId}
                 onChange={(e) => setSelectedConductorId(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2.5 outline-none text-white text-xs cursor-pointer"
@@ -194,18 +202,23 @@ export function TripAssignModal({ order, onSuccess, onCancel }: TripAssignModalP
               </select>
             </div>
 
-            {/* Botones */}
+            {!vehiculos.length && !conductores.length && (
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-[11px] text-amber-300">
+                No hay vehículos ni conductores disponibles en este momento. Verifica si existen viajes activos pendientes de cierre.
+              </div>
+            )}
+
             <div className="flex gap-3 pt-2">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={onCancel}
                 className="flex-1 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 font-semibold hover:bg-slate-900 active:scale-95 transition-all cursor-pointer"
               >
                 Cancelar
               </button>
-              <button 
+              <button
                 type="button"
-                onClick={handleAssign}
+                onClick={() => void handleAssign()}
                 disabled={loading}
                 className="flex-1 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/10 cursor-pointer flex items-center justify-center gap-1"
               >
@@ -222,12 +235,11 @@ export function TripAssignModal({ order, onSuccess, onCancel }: TripAssignModalP
                 )}
               </button>
             </div>
-
           </div>
         )}
-
       </div>
     </div>
   );
 }
+
 export default TripAssignModal;

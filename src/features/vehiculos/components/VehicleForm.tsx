@@ -4,6 +4,7 @@ import { vehiclesService } from '../../../shared/services/vehiclesService';
 import { supabase } from '../../../shared/services/supabase';
 import { validarPlaca } from '../../../shared/validations';
 import type { Vehiculo } from '../../../shared/types';
+import { getErrorMessage } from '../../../shared/utils/errors';
 
 interface VehicleFormProps {
   onSuccess: () => void;
@@ -39,8 +40,8 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
 
         if (err) throw err;
         setConductores(data || []);
-      } catch (e: any) {
-        console.error('Error al cargar conductores para selección:', e);
+      } catch (error: unknown) {
+        console.error('Error al cargar conductores para selección:', error);
       }
     }
     loadConductores();
@@ -84,9 +85,9 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
       }
 
       onSuccess();
-    } catch (err: any) {
-      console.error('Error al guardar vehículo:', err);
-      setError(err.message || 'Ocurrió un error al guardar los datos del vehículo.');
+    } catch (error: unknown) {
+      console.error('Error al guardar vehículo:', error);
+      setError(getErrorMessage(error, 'Ocurrió un error al guardar los datos del vehículo.'));
     } finally {
       setLoading(false);
     }

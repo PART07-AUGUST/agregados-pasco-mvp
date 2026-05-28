@@ -1,8 +1,10 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { ClipboardList, Save, AlertCircle, Users, X } from 'lucide-react';
 import { ordersService } from '../../../shared/services/ordersService';
+import type { Pedido } from '../../../shared/services/ordersService';
 import { supabase } from '../../../shared/services/supabase';
 import { useAuthStore } from '../../../shared/stores/useAuthStore';
+import { getErrorMessage } from '../../../shared/utils/errors';
 
 interface OrderFormProps {
   onSuccess: () => void;
@@ -14,7 +16,7 @@ interface ClienteOption {
   nombre: string;
 }
 
-const MATERIAL_OPTIONS = [
+const MATERIAL_OPTIONS: Array<{ value: Pedido['material']; label: string }> = [
   { value: 'ARENA_FINA', label: 'Arena Fina' },
   { value: 'ARENA_GRUESA', label: 'Arena Gruesa' },
   { value: 'PIEDRA_1_2', label: 'Piedra Chancada de 1/2"' },
@@ -26,7 +28,7 @@ const MATERIAL_OPTIONS = [
 export function OrderForm({ onSuccess, onCancel }: OrderFormProps) {
   const { user } = useAuthStore();
   const [clienteId, setClienteId] = useState('');
-  const [material, setMaterial] = useState<any>('ARENA_FINA');
+  const [material, setMaterial] = useState<Pedido['material']>('ARENA_FINA');
   const [volumenM3, setVolumenM3] = useState<number | ''>('');
   const [destino, setDestino] = useState('');
 
@@ -35,6 +37,7 @@ export function OrderForm({ onSuccess, onCancel }: OrderFormProps) {
   const [error, setError] = useState<string | null>(null);
 
   const isAdmin = user?.rol === 'ADMINISTRADOR';
+  const effectiveClienteId = isAdmin ? clienteId : (user?.id ?? '');
 
   useEffect(() => {
     // Si somos Administrador, cargamos la lista de constructoras/clientes para registrar pedidos
@@ -49,23 +52,20 @@ export function OrderForm({ onSuccess, onCancel }: OrderFormProps) {
 
           if (err) throw err;
           setClientes(data || []);
-        } catch (e: any) {
-          console.error('Error al cargar clientes:', e);
+        } catch (error: unknown) {
+          console.error('Error al cargar clientes:', error);
         }
       }
       loadClientes();
-    } else if (user) {
-      // Si somos clientes, automáticamente nos asignamos
-      setClienteId(user.id);
     }
-  }, [isAdmin, user]);
+  }, [isAdmin]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
     // 1. Validaciones
-    if (!clienteId || !material || volumenM3 === '' || !destino.trim()) {
+    if (!effectiveClienteId || !material || volumenM3 === '' || !destino.trim()) {
       setError('Por favor, completa todos los campos obligatorios.');
       return;
     }
@@ -78,16 +78,16 @@ export function OrderForm({ onSuccess, onCancel }: OrderFormProps) {
     setLoading(true);
     try {
       await ordersService.createOrder({
-        clienteId,
+        clienteId: effectiveClienteId,
         material,
         volumenM3: Number(volumenM3),
         destino: destino.trim()
       });
 
       onSuccess();
-    } catch (err: any) {
-      console.error('Error al crear pedido:', err);
-      setError(err.message || 'Ocurrió un error al guardar tu pedido.');
+    } catch (error: unknown) {
+      console.error('Error al crear pedido:', error);
+      setError(getErrorMessage(error, 'Ocurrió un error al guardar tu pedido.'));
     } finally {
       setLoading(false);
     }
@@ -151,7 +151,7 @@ export function OrderForm({ onSuccess, onCancel }: OrderFormProps) {
               <label className="font-semibold text-slate-400">Material Agregado *</label>
               <select 
                 value={material}
-                onChange={(e) => setMaterial(e.target.value)}
+                onChange={(e) => setMaterial(e.target.value as Pedido['material'])}
                 className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2.5 outline-none text-white text-xs cursor-pointer"
               >
                 {MATERIAL_OPTIONS.map((m) => (

@@ -47,7 +47,7 @@ export function Unauthorized() {
         </div>
 
         <div className="text-[9px] text-slate-600 font-mono">
-          SISTEMA DE SEGURIDAD RLS - AGREGADOS PASCO
+          SISTEMA DE SEGURIDAD RLS - AGREGADOS SIS
         </div>
       </div>
     </div>
