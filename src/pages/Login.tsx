@@ -23,9 +23,15 @@ export function Login() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center px-4 relative selection:bg-amber-500 selection:text-slate-950">
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
+        style={{ backgroundImage: "url('https://vicarmix.com/img/conreto-1.jpg')", backgroundPosition: 'center 30%' }}
+      ></div>
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.58)_0%,rgba(2,6,23,0.5)_24%,rgba(2,6,23,0.76)_68%,rgba(2,6,23,0.9)_100%)]"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.14),transparent_38%)]"></div>
       
       {/* Retícula decorativa de fondo */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-30"></div>
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(15,23,42,0.18)_1px,transparent_1px),linear-gradient(to_bottom,rgba(15,23,42,0.18)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-30"></div>
 
       <div className="relative z-10 w-full max-w-md flex flex-col space-y-6">
         
@@ -38,7 +44,7 @@ export function Login() {
             <div className="text-left">
               <span className="text-[10px] font-bold text-amber-500 tracking-widest uppercase">Cerro de Pasco</span>
               <h1 className="text-lg font-extrabold tracking-tight text-white leading-none">
-                AGREGADOS <span className="text-slate-400 font-light">PASCO</span>
+                AGREGADOS <span className="text-slate-400 font-light">SIS</span>
               </h1>
             </div>
           </Link>

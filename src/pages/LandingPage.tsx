@@ -7,7 +7,6 @@ import {
   HardHat, 
   ArrowRight,
   Sparkles,
-  Map,
   CheckCircle2
 } from 'lucide-react';
 import { useAuthStore } from '../shared/stores/useAuthStore';
@@ -30,7 +29,7 @@ export function LandingPage() {
             <div>
               <span className="text-[10px] font-bold text-amber-500 tracking-widest uppercase">Cerro de Pasco</span>
               <h1 className="text-md font-extrabold tracking-tight text-white">
-                AGREGADOS <span className="text-slate-400 font-light">PASCO</span>
+                AGREGADOS <span className="text-slate-400 font-light">SIS</span>
               </h1>
             </div>
           </div>
@@ -69,9 +68,15 @@ export function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative py-20 sm:py-28 overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-35"></div>
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none"></div>
+      <section className="relative py-20 sm:py-28 overflow-hidden bg-slate-950">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
+          style={{ backgroundImage: "url('https://vicarmix.com/img/conreto-1.jpg')", backgroundPosition: 'center 30%' }}
+        ></div>
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.58)_0%,rgba(2,6,23,0.5)_24%,rgba(2,6,23,0.76)_68%,rgba(2,6,23,0.9)_100%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.14),transparent_38%)]"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(15,23,42,0.18)_1px,transparent_1px),linear-gradient(to_bottom,rgba(15,23,42,0.18)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-30"></div>
+        <div className="absolute top-10 right-[18%] w-80 h-80 bg-amber-500/12 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center space-y-8">
           
@@ -102,26 +107,6 @@ export function LandingPage() {
             >
               Zonas de Despacho
             </a>
-          </div>
-
-          {/* Quick Metrics Bar */}
-          <div className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            <div className="p-4 rounded-xl bg-slate-900/30 border border-slate-900/60 backdrop-blur-sm">
-              <span className="text-2xl font-bold text-white font-mono">100%</span>
-              <p className="text-xs text-slate-500 uppercase mt-1">Eficacia Offline</p>
-            </div>
-            <div className="p-4 rounded-xl bg-slate-900/30 border border-slate-900/60 backdrop-blur-sm">
-              <span className="text-2xl font-bold text-amber-500 font-mono">4,380 m</span>
-              <p className="text-xs text-slate-500 uppercase mt-1">Altitud Cerro Pasco</p>
-            </div>
-            <div className="p-4 rounded-xl bg-slate-900/30 border border-slate-900/60 backdrop-blur-sm">
-              <span className="text-2xl font-bold text-white font-mono">ABC-123</span>
-              <p className="text-xs text-slate-500 uppercase mt-1">Control de Placa</p>
-            </div>
-            <div className="p-4 rounded-xl bg-slate-900/30 border border-slate-900/60 backdrop-blur-sm">
-              <span className="text-2xl font-bold text-amber-500 font-mono">Supabase</span>
-              <p className="text-xs text-slate-500 uppercase mt-1">Base Tecnológica</p>
-            </div>
           </div>
 
         </div>
@@ -167,8 +152,13 @@ export function LandingPage() {
               
               {/* Material 1: Arena */}
               <div className="bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-2xl p-6 space-y-4 hover:translate-y-[-4px] transition-all">
-                <div className="h-40 rounded-xl bg-gradient-to-br from-amber-700/20 to-amber-950/40 border border-amber-900/30 flex items-center justify-center relative overflow-hidden">
-                  <span className="text-5xl">🏜️</span>
+                <div className="h-40 rounded-xl border border-amber-900/30 flex items-center justify-center relative overflow-hidden bg-slate-950">
+                  <img
+                    src="https://grupohammersac.com/wp-content/uploads/2021/07/1-2-1.jpg"
+                    alt="Arena fina"
+                    className="absolute inset-0 h-full w-full object-cover opacity-80"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-950/40 to-slate-950/70"></div>
                   <div className="absolute bottom-3 left-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded">Construcción y Acabados</div>
                 </div>
                 <h4 className="text-lg font-bold text-white">Arena Fina y Gruesa</h4>
@@ -183,8 +173,13 @@ export function LandingPage() {
 
               {/* Material 2: Piedra Chancada */}
               <div className="bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-2xl p-6 space-y-4 hover:translate-y-[-4px] transition-all">
-                <div className="h-40 rounded-xl bg-gradient-to-br from-slate-700/20 to-slate-950/40 border border-slate-800/30 flex items-center justify-center relative overflow-hidden">
-                  <span className="text-5xl">🪨</span>
+                <div className="h-40 rounded-xl border border-slate-800/30 flex items-center justify-center relative overflow-hidden bg-slate-950">
+                  <img
+                    src="https://d34fyu2ua7aizz.cloudfront.net/images/product/6/large/ts_image_5e78e07b27b0b8_15411847.png"
+                    alt="Piedra chancada"
+                    className="absolute inset-0 h-full w-full object-cover opacity-85"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-slate-950/35 to-slate-950/75"></div>
                   <div className="absolute bottom-3 left-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded">Concreto Armado</div>
                 </div>
                 <h4 className="text-lg font-bold text-white">Piedra Chancada (1/2" - 3/4")</h4>
@@ -199,8 +194,13 @@ export function LandingPage() {
 
               {/* Material 3: Afirmado */}
               <div className="bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-2xl p-6 space-y-4 hover:translate-y-[-4px] transition-all">
-                <div className="h-40 rounded-xl bg-gradient-to-br from-amber-900/20 to-slate-950/40 border border-amber-950/30 flex items-center justify-center relative overflow-hidden">
-                  <span className="text-5xl">🛣️</span>
+                <div className="h-40 rounded-xl border border-amber-950/30 flex items-center justify-center relative overflow-hidden bg-slate-950">
+                  <img
+                    src="https://ferrincorp.com.pe/wp-content/uploads/2024/08/ARENAGRUESA_1-300x300.webp"
+                    alt="Afirmado clasificado"
+                    className="absolute inset-0 h-full w-full object-cover opacity-80"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-950/35 to-slate-950/75"></div>
                   <div className="absolute bottom-3 left-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded">Carreteras y Accesos</div>
                 </div>
                 <h4 className="text-lg font-bold text-white">Afirmado Clasificado</h4>
@@ -268,13 +268,16 @@ export function LandingPage() {
       <section id="cobertura" className="py-20 bg-slate-900/10 border-t border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           
-          <div className="h-72 rounded-3xl bg-gradient-to-br from-amber-500/5 to-slate-900 border border-slate-900 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-25"></div>
-            <Map className="h-16 w-16 text-amber-500/30 mb-4 animate-bounce-slow" />
-            <h4 className="text-sm font-bold text-white tracking-widest uppercase">Zonas de Suministro Frecuente</h4>
-            <p className="text-xs text-slate-400 text-center max-w-sm mt-2 leading-relaxed">
-              Despachamos directamente a obras en Chaupimarca, Yanacancha, Tinyahuarco, Quiulacocha, Vicco, Ninacaca y toda la provincia de Pasco.
-            </p>
+          <div className="h-72 rounded-3xl border border-slate-900 overflow-hidden bg-slate-950/60 backdrop-blur-sm shadow-[0_20px_60px_rgba(2,6,23,0.35)]">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3920.8991117082287!2d-76.25562122538891!3d-10.66493858947709!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x910812b72a568a67%3A0x7aa1547f568fd8ce!2sEscuela%20de%20Sistemas%20y%20Computaci%C3%B3n%20UNDAC!5e0!3m2!1ses!2spe!4v1779932664009!5m2!1ses!2spe"
+              className="h-full w-full"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Mapa de cobertura Agregados SIS"
+            />
           </div>
 
           <div className="space-y-6">
@@ -313,7 +316,7 @@ export function LandingPage() {
                 <Truck className="h-5 w-5" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-white tracking-widest uppercase">AGREGADOS PASCO</h4>
+                <h4 className="text-sm font-bold text-white tracking-widest uppercase">AGREGADOS SIS</h4>
                 <p className="text-xs text-slate-500">Soporte Técnico & Control de Despacho</p>
               </div>
             </div>
@@ -326,7 +329,7 @@ export function LandingPage() {
 
           <div className="border-t border-slate-900/60 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
             <div className="flex items-center space-x-1.5">
-              <span>© {new Date().getFullYear()} Agregados Pasco. Todos los derechos reservados.</span>
+              <span>© {new Date().getFullYear()} Agregados SIS. Todos los derechos reservados.</span>
             </div>
             
             <div className="flex items-center space-x-4">

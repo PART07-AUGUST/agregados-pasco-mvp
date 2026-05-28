@@ -1,5 +1,6 @@
 import { ClipboardCheck, Truck, ShieldX, ShieldAlert, Award } from 'lucide-react';
 import type { Pedido } from '../../../shared/services/ordersService';
+import { getErrorMessage } from '../../../shared/utils/errors';
 
 interface OrdersListProps {
   orders: Pedido[];
@@ -23,8 +24,8 @@ export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = fal
     if (confirm('¿Estás seguro de que deseas cancelar este pedido? Esta acción no se puede deshacer.')) {
       try {
         await onCancelOrder(id);
-      } catch (e: any) {
-        alert(e.message || 'Error al cancelar pedido');
+      } catch (error: unknown) {
+        alert(getErrorMessage(error, 'Error al cancelar pedido'));
       }
     }
   };

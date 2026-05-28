@@ -1,11 +1,13 @@
+import type { OfflineAction, OfflineWeighingPayload } from '../types';
+import type { ViajeDetallado } from './tripsService';
+
 const DB_NAME = 'AgregadosOfflineDB';
 const DB_VERSION = 1;
 
-export interface OfflineAction {
-  id?: number;
-  type: 'INICIAR_VIAJE' | 'REGISTRAR_BALANZA' | 'CONFIRMAR_ENTREGA';
+interface CachedTripRecord {
+  conductorId: string;
   viajeId: string;
-  payload: any;
+  trip: ViajeDetallado;
   timestamp: number;
 }
 
@@ -46,18 +48,18 @@ export const offlineDb = {
   async enqueueAction(
     type: OfflineAction['type'], 
     viajeId: string, 
-    payload: any = {}
+    payload: OfflineWeighingPayload | Record<string, never> = {}
   ): Promise<number> {
     const db = await openDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction('cola_acciones', 'readwrite');
       const store = transaction.objectStore('cola_acciones');
-      const action: OfflineAction = {
+      const action = {
         type,
         viajeId,
         payload,
         timestamp: Date.now()
-      };
+      } as OfflineAction;
       
       const request = store.add(action);
       
@@ -182,12 +184,12 @@ export const offlineDb = {
   /**
    * Guarda en caché local de IndexedDB el estado actual del viaje activo recuperado de Supabase.
    */
-  async cacheActiveTrip(viajeId: string, trip: any): Promise<void> {
+  async cacheActiveTrip(conductorId: string, viajeId: string, trip: ViajeDetallado): Promise<void> {
     const db = await openDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction('cache_viaje', 'readwrite');
       const store = transaction.objectStore('cache_viaje');
-      const request = store.put({ viajeId, trip, timestamp: Date.now() });
+      const request = store.put({ conductorId, viajeId, trip, timestamp: Date.now() } satisfies CachedTripRecord);
       
       request.onsuccess = () => {
         resolve();
@@ -202,20 +204,27 @@ export const offlineDb = {
   /**
    * Recupera el último viaje activo guardado en la caché local.
    */
-  async getCachedActiveTrip(): Promise<any | null> {
+  async getCachedActiveTrip(conductorId: string): Promise<ViajeDetallado | null> {
     const db = await openDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction('cache_viaje', 'readonly');
       const store = transaction.objectStore('cache_viaje');
-      const request = store.openCursor(null, 'prev'); // Obtener el registro más reciente
+      const request = store.openCursor(null, 'prev'); // Obtener el registro más reciente del conductor
       
       request.onsuccess = () => {
         const cursor = request.result;
-        if (cursor) {
-          resolve(cursor.value.trip);
-        } else {
+        if (!cursor) {
           resolve(null);
+          return;
         }
+
+        const value = cursor.value as CachedTripRecord;
+        if (value.conductorId === conductorId) {
+          resolve(value.trip);
+          return;
+        }
+
+        cursor.continue();
       };
       
       request.onerror = () => {

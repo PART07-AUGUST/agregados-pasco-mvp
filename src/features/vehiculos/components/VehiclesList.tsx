@@ -1,5 +1,6 @@
 import { Edit2, Trash2, ShieldCheck, AlertCircle } from 'lucide-react';
 import type { VehiculoConConductor } from '../../../shared/services/vehiclesService';
+import { getErrorMessage } from '../../../shared/utils/errors';
 
 interface VehiclesListProps {
   vehicles: VehiculoConConductor[];
@@ -12,8 +13,8 @@ export function VehiclesList({ vehicles, onEdit, onDelete }: VehiclesListProps) 
     if (confirm(`¿Estás seguro de que deseas eliminar permanentemente el vehículo con placa "${placa}" de la flota?`)) {
       try {
         await onDelete(id);
-      } catch (e: any) {
-        alert(e.message || 'Error al eliminar vehículo');
+      } catch (error: unknown) {
+        alert(getErrorMessage(error, 'Error al eliminar vehículo'));
       }
     }
   };

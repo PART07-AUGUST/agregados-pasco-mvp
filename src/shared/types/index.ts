@@ -35,3 +35,31 @@ export interface Viaje {
   fechaAsignacion: string;
   fechaEntrega?: string;
 }
+
+export interface OfflineWeighingPayload {
+  pesoEntrada: number;
+  pesoSalida: number;
+}
+
+export type OfflineAction =
+  | {
+      id?: number;
+      type: 'INICIAR_VIAJE';
+      viajeId: string;
+      payload: Record<string, never>;
+      timestamp: number;
+    }
+  | {
+      id?: number;
+      type: 'REGISTRAR_BALANZA';
+      viajeId: string;
+      payload: OfflineWeighingPayload;
+      timestamp: number;
+    }
+  | {
+      id?: number;
+      type: 'CONFIRMAR_ENTREGA';
+      viajeId: string;
+      payload: Record<string, never>;
+      timestamp: number;
+    };

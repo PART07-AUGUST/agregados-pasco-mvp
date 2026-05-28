@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../../shared/stores/useAuthStore';
 
 export function LoginForm() {
@@ -52,7 +52,7 @@ export function LoginForm() {
         {/* Encabezado del Formulario */}
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-bold text-white tracking-tight">Portal de Acceso</h2>
-          <p className="text-xs text-slate-400">Ingresa tus credenciales autorizadas de Agregados Pasco</p>
+          <p className="text-xs text-slate-400">Ingresa tus credenciales autorizadas de Agregados SIS</p>
         </div>
 
         {/* Mensajes de Error (Servidor / Cliente) */}
@@ -131,11 +131,6 @@ export function LoginForm() {
           </button>
         </form>
 
-        {/* Disclaimer de Seguridad */}
-        <div className="pt-4 border-t border-slate-900/60 flex items-center justify-center space-x-1.5 text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
-          <ShieldCheck className="h-3.5 w-3.5 text-amber-500" />
-          <span>Acceso Protegido por Supabase Auth RLS</span>
-        </div>
       </div>
     </div>
   );
