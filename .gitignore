@@ -12,7 +12,8 @@ dist/
 dist-ssr/
 
 # Environment Variables and Sensitive Files
-.env
+.env*
+!.env.example
 .env.local
 .env.development.local
 .env.test.local
@@ -20,6 +21,17 @@ dist-ssr/
 
 # Supabase local config
 supabase/.temp/
+supabase/migrations/
+
+# Credentials & Certificates
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*.pkcs12
+*.keystore
 
 # Editor/System directories
 .vscode/*
@@ -31,3 +43,7 @@ supabase/.temp/
 *.njsproj
 *.sln
 *.sw?
+
+# Agent-specific files
+.agents/
+skills-lock.json

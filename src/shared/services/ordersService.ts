@@ -9,6 +9,11 @@ export interface Pedido {
   estado: 'PENDIENTE' | 'ASIGNADO' | 'EN_CAMINO' | 'ENTREGADO' | 'CANCELADO';
   createdAt: string;
   clienteNombre?: string;
+  vehiculoPlaca?: string;
+  vehiculoMarca?: string;
+  vehiculoModelo?: string;
+  conductorNombre?: string;
+  conductorCelular?: string;
 }
 
 interface PedidoRow {
@@ -19,12 +24,52 @@ interface PedidoRow {
   destino: string;
   estado: Pedido['estado'];
   created_at: string;
-  usuarios?: Array<{
+  usuarios?: {
     nombre: string | null;
+  } | Array<{
+    nombre: string | null;
+  }> | null;
+  viajes?: Array<{
+    id: string;
+    estado: string;
+    vehiculos?: {
+      placa: string | null;
+      marca: string | null;
+      modelo: string | null;
+    } | Array<{
+      placa: string | null;
+      marca: string | null;
+      modelo: string | null;
+    }> | null;
+    usuarios?: {
+      nombre: string | null;
+      celular: string | null;
+    } | Array<{
+      nombre: string | null;
+      celular: string | null;
+    }> | null;
   }> | null;
 }
 
 function mapPedidoRow(pedido: PedidoRow): Pedido {
+  const getJoinedNombre = (relation: any): string => {
+    if (!relation) return '';
+    if (Array.isArray(relation)) {
+      return relation[0]?.nombre || '';
+    }
+    return relation.nombre || '';
+  };
+
+  const getSingleRelation = <T>(val: T | T[] | null | undefined): T | undefined => {
+    if (!val) return undefined;
+    if (Array.isArray(val)) return val[0];
+    return val;
+  };
+
+  const viaje = pedido.viajes && pedido.viajes.length > 0 ? pedido.viajes[0] : undefined;
+  const vehiculo = viaje ? getSingleRelation(viaje.vehiculos) : undefined;
+  const conductor = viaje ? getSingleRelation(viaje.usuarios) : undefined;
+
   return {
     id: pedido.id,
     clienteId: pedido.cliente_id,
@@ -33,7 +78,12 @@ function mapPedidoRow(pedido: PedidoRow): Pedido {
     destino: pedido.destino,
     estado: pedido.estado,
     createdAt: pedido.created_at,
-    clienteNombre: pedido.usuarios?.[0]?.nombre || 'Cliente Desconocido',
+    clienteNombre: getJoinedNombre(pedido.usuarios) || 'Cliente Desconocido',
+    vehiculoPlaca: vehiculo?.placa || undefined,
+    vehiculoMarca: vehiculo?.marca || undefined,
+    vehiculoModelo: vehiculo?.modelo || undefined,
+    conductorNombre: conductor?.nombre || undefined,
+    conductorCelular: conductor?.celular || undefined,
   };
 }
 
@@ -51,6 +101,19 @@ export const ordersService = {
         created_at,
         usuarios:cliente_id (
           nombre
+        ),
+        viajes (
+          id,
+          estado,
+          vehiculos:vehiculo_id (
+            placa,
+            marca,
+            modelo
+          ),
+          usuarios:conductor_id (
+            nombre,
+            celular
+          )
         )
       `)
       .order('created_at', { ascending: false });

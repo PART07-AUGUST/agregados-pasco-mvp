@@ -1,5 +1,15 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { ClipboardList, Save, AlertCircle, Users, X } from 'lucide-react';
+import { 
+  ClipboardList, 
+  Save, 
+  AlertCircle, 
+  Users, 
+  X, 
+  CheckCircle2, 
+  MessageSquare, 
+  Copy, 
+  ExternalLink 
+} from 'lucide-react';
 import { ordersService } from '../../../shared/services/ordersService';
 import type { Pedido } from '../../../shared/services/ordersService';
 import { supabase } from '../../../shared/services/supabase';
@@ -35,6 +45,10 @@ export function OrderForm({ onSuccess, onCancel }: OrderFormProps) {
   const [clientes, setClientes] = useState<ClienteOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Estados para el flujo de éxito y pago del cliente
+  const [createdOrder, setCreatedOrder] = useState<Pedido | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const isAdmin = user?.rol === 'ADMINISTRADOR';
   const effectiveClienteId = isAdmin ? clienteId : (user?.id ?? '');
@@ -77,14 +91,18 @@ export function OrderForm({ onSuccess, onCancel }: OrderFormProps) {
 
     setLoading(true);
     try {
-      await ordersService.createOrder({
+      const newOrder = await ordersService.createOrder({
         clienteId: effectiveClienteId,
         material,
         volumenM3: Number(volumenM3),
         destino: destino.trim()
       });
 
-      onSuccess();
+      if (!isAdmin) {
+        setCreatedOrder(newOrder);
+      } else {
+        onSuccess();
+      }
     } catch (error: unknown) {
       console.error('Error al crear pedido:', error);
       setError(getErrorMessage(error, 'Ocurrió un error al guardar tu pedido.'));
@@ -93,9 +111,105 @@ export function OrderForm({ onSuccess, onCancel }: OrderFormProps) {
     }
   };
 
+  if (createdOrder) {
+    const materialLabel = MATERIAL_OPTIONS.find(m => m.value === createdOrder.material)?.label || createdOrder.material;
+    const waText = `Hola, adjunto el comprobante de pago para mi pedido de ${materialLabel} por ${createdOrder.volumenM3} m³ con destino a ${createdOrder.destino}. ID de Pedido: ${createdOrder.id}`;
+    const waUrl = `https://wa.me/51958292145?text=${encodeURIComponent(waText)}`;
+
+    const copyToClipboard = () => {
+      navigator.clipboard.writeText("191-98765432-0-12");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative max-w-md w-full mx-auto space-y-6 text-xs text-slate-350">
+        <button 
+          type="button"
+          onClick={onSuccess}
+          className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-slate-400 hover:text-white active:scale-95 transition-all cursor-pointer"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="text-center space-y-3">
+          <div className="mx-auto w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center text-emerald-400">
+            <CheckCircle2 className="h-6 w-6" />
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider">¡Pedido Solicitado!</h4>
+            <span className="text-[9px] text-slate-500 font-mono">ID: {createdOrder.id}</span>
+          </div>
+        </div>
+
+        <div className="p-3 bg-slate-950 rounded-xl border border-slate-850 space-y-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Instrucciones de Pago</span>
+          <p className="leading-normal text-[11px] text-slate-400">
+            Para procesar tu pedido y programar el volquete, realiza el pago correspondiente y envía la captura de pantalla por WhatsApp al Administrador.
+          </p>
+        </div>
+
+        <div className="bg-slate-950/60 rounded-2xl p-4 border border-slate-850/80 space-y-3">
+          <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 border-b border-slate-900 pb-2">
+            <span>Método de Pago</span>
+            <span className="text-amber-500">Banco BCP / Yape</span>
+          </div>
+          
+          <div className="space-y-1">
+            <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Transferencia BCP</span>
+            <div className="flex justify-between items-center bg-slate-950 p-2 rounded-lg border border-slate-900 font-mono">
+              <span className="text-white">191-98765432-0-12</span>
+              <button 
+                type="button"
+                onClick={copyToClipboard}
+                className="text-amber-500 hover:text-amber-400 active:scale-95 transition-all cursor-pointer font-bold text-[9px] flex items-center gap-0.5"
+              >
+                <Copy className="h-3 w-3" />
+                <span>{copied ? 'Copiado' : 'Copiar'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 pt-1">
+            <div className="space-y-0.5">
+              <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider block">Yape / Plin</span>
+              <span className="font-bold text-white font-mono text-xs">958 292 145</span>
+            </div>
+            <div className="space-y-0.5">
+              <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider block">Beneficiario</span>
+              <span className="font-semibold text-slate-300">Paolo Rojas</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 pt-2">
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all text-slate-950 font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 shadow-md shadow-emerald-500/10 cursor-pointer"
+          >
+            <MessageSquare className="h-4.5 w-4.5" />
+            <span>ENVIAR COMPROBANTE POR WHATSAPP</span>
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+
+          <button
+            type="button"
+            onClick={onSuccess}
+            className="w-full py-3 rounded-xl bg-slate-950 border border-slate-850 text-slate-400 hover:text-white active:scale-95 transition-all font-semibold cursor-pointer text-xs"
+          >
+            Volver al Panel Principal
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative">
       <button 
+        type="button"
         onClick={onCancel}
         className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-slate-400 hover:text-white active:scale-95 transition-all cursor-pointer"
       >
@@ -204,7 +318,7 @@ export function OrderForm({ onSuccess, onCancel }: OrderFormProps) {
             <button 
               type="submit"
               disabled={loading}
-              className="flex-1 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/10 cursor-pointer flex items-center justify-center gap-1"
+              className="flex-1 py-2.5 rounded-xl bg-amber-500 text-amber-950 font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/10 cursor-pointer flex items-center justify-center gap-1"
             >
               <Save className="h-3.5 w-3.5" />
               <span>{loading ? 'Procesando...' : 'Guardar Pedido'}</span>

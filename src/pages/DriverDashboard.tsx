@@ -211,7 +211,7 @@ export function DriverDashboard() {
               <HardHat className="h-5 w-5 text-amber-500" />
             </div>
             <div>
-              <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest">Conductor Autorizado</span>
+              <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest">{user?.rol || 'CONDUCTOR'}</span>
               <h2 className="text-sm font-bold text-white leading-normal">{user?.nombre || 'Chofer Pasco'}</h2>
             </div>
           </div>

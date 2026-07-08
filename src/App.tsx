@@ -6,8 +6,10 @@ import { ProtectedRoute } from './routes/ProtectedRoute';
 // Importación de Páginas Modulares
 import { LandingPage } from './pages/LandingPage';
 import { Login } from './pages/Login';
+import { Register } from './pages/Register';
 import { Unauthorized } from './pages/Unauthorized';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { ClientDashboard } from './pages/ClientDashboard';
 import { DriverDashboard } from './pages/DriverDashboard';
 
 function App() {
@@ -24,6 +26,7 @@ function App() {
         {/* 1. RUTAS PÚBLICAS */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
 
         {/* 2. RUTAS PRIVADAS: PORTAL ADMINISTRADOR (RLS PROTEGIDA) */}
@@ -34,6 +37,11 @@ function App() {
         {/* 3. RUTAS PRIVADAS: PORTAL CONDUCTOR (RLS PROTEGIDA) */}
         <Route element={<ProtectedRoute allowedRoles={['CONDUCTOR']} />}>
           <Route path="/conductor" element={<DriverDashboard />} />
+        </Route>
+
+        {/* 4. RUTAS PRIVADAS: PORTAL CLIENTE (RLS PROTEGIDA) */}
+        <Route element={<ProtectedRoute allowedRoles={['CLIENTE']} />}>
+          <Route path="/cliente" element={<ClientDashboard />} />
         </Route>
 
         {/* 4. REDIRECCIÓN POR DEFECTO */}

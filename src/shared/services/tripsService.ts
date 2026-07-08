@@ -6,7 +6,9 @@ interface TripOrderRow {
   material: string | null;
   volumen_m3: number | string | null;
   destino: string | null;
-  usuarios?: Array<{
+  usuarios?: {
+    nombre: string | null;
+  } | Array<{
     nombre: string | null;
   }> | null;
 }
@@ -30,9 +32,9 @@ interface TripRow {
   ticket_balanza_url: string | null;
   fecha_asignacion: string;
   fecha_entrega: string | null;
-  pedidos?: TripOrderRow[] | null;
-  vehiculos?: TripVehicleRow[] | null;
-  usuarios?: TripDriverRow[] | null;
+  pedidos?: TripOrderRow | TripOrderRow[] | null;
+  vehiculos?: TripVehicleRow | TripVehicleRow[] | null;
+  usuarios?: TripDriverRow | TripDriverRow[] | null;
 }
 
 export interface ViajeDetallado extends Viaje {
@@ -45,6 +47,24 @@ export interface ViajeDetallado extends Viaje {
 }
 
 function mapTripRow(t: TripRow): ViajeDetallado {
+  const getSingleRelation = <T>(val: T | T[] | null | undefined): T | undefined => {
+    if (!val) return undefined;
+    if (Array.isArray(val)) return val[0];
+    return val;
+  };
+
+  const getJoinedNombre = (relation: any): string => {
+    if (!relation) return '';
+    if (Array.isArray(relation)) {
+      return relation[0]?.nombre || '';
+    }
+    return relation.nombre || '';
+  };
+
+  const pedido = getSingleRelation(t.pedidos);
+  const vehiculo = getSingleRelation(t.vehiculos);
+  const conductor = getSingleRelation(t.usuarios);
+
   return {
     id: t.id,
     pedidoId: t.pedido_id,
@@ -56,12 +76,12 @@ function mapTripRow(t: TripRow): ViajeDetallado {
     ticketBalanzaUrl: t.ticket_balanza_url || undefined,
     fechaAsignacion: t.fecha_asignacion,
     fechaEntrega: t.fecha_entrega || undefined,
-    material: t.pedidos?.[0]?.material ?? undefined,
-    volumenM3: t.pedidos?.[0]?.volumen_m3 ? Number(t.pedidos[0].volumen_m3) : undefined,
-    destino: t.pedidos?.[0]?.destino ?? undefined,
-    clienteNombre: t.pedidos?.[0]?.usuarios?.[0]?.nombre ?? undefined,
-    placa: t.vehiculos?.[0]?.placa ?? undefined,
-    conductorNombre: t.usuarios?.[0]?.nombre ?? undefined,
+    material: pedido?.material ?? undefined,
+    volumenM3: pedido?.volumen_m3 ? Number(pedido.volumen_m3) : undefined,
+    destino: pedido?.destino ?? undefined,
+    clienteNombre: getJoinedNombre(pedido?.usuarios) || undefined,
+    placa: vehiculo?.placa ?? undefined,
+    conductorNombre: conductor?.nombre ?? undefined,
   };
 }
 
