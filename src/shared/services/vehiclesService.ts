@@ -9,7 +9,9 @@ interface VehiculoRow {
   capacidad_m3: number | string;
   conductor_id: string | null;
   activo: boolean;
-  usuarios?: Array<{
+  usuarios?: {
+    nombre: string | null;
+  } | Array<{
     nombre: string | null;
   }> | null;
 }
@@ -19,6 +21,14 @@ export interface VehiculoConConductor extends Vehiculo {
 }
 
 function mapVehiculoRow(vehicle: VehiculoRow): VehiculoConConductor {
+  const getJoinedNombre = (relation: any): string => {
+    if (!relation) return '';
+    if (Array.isArray(relation)) {
+      return relation[0]?.nombre || '';
+    }
+    return relation.nombre || '';
+  };
+
   return {
     id: vehicle.id,
     placa: vehicle.placa,
@@ -27,7 +37,7 @@ function mapVehiculoRow(vehicle: VehiculoRow): VehiculoConConductor {
     capacidadM3: Number(vehicle.capacidad_m3),
     conductorId: vehicle.conductor_id ?? undefined,
     activo: vehicle.activo,
-    conductorNombre: vehicle.usuarios?.[0]?.nombre || 'Sin conductor asignado',
+    conductorNombre: getJoinedNombre(vehicle.usuarios) || 'Sin conductor asignado',
   };
 }
 

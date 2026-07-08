@@ -122,7 +122,6 @@ export function VehiclesList({ vehicles, onEdit, onDelete }: VehiclesListProps) 
       {/* Footer del Listado */}
       <div className="p-4 border-t border-slate-900 bg-slate-950/20 flex items-center justify-between text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
         <span className="flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5 text-amber-500" /> Base de Datos Flota Activa</span>
-        <span>Supabase Sync</span>
       </div>
 
     </div>

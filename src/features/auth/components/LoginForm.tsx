@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../../shared/stores/useAuthStore';
 
@@ -36,6 +36,8 @@ export function LoginForm() {
         navigate('/admin', { replace: true });
       } else if (loggedUser.rol === 'CONDUCTOR') {
         navigate('/conductor', { replace: true });
+      } else if (loggedUser.rol === 'CLIENTE') {
+        navigate('/cliente', { replace: true });
       } else {
         navigate('/', { replace: true });
       }
@@ -129,6 +131,15 @@ export function LoginForm() {
               </>
             )}
           </button>
+
+          <div className="text-center mt-4">
+            <Link
+              to="/register"
+              className="text-slate-400 hover:text-amber-500 font-semibold transition-colors"
+            >
+              ¿No tienes cuenta? Registra tu constructora aquí
+            </Link>
+          </div>
         </form>
 
       </div>
