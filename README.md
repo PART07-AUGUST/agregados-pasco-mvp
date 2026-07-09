@@ -104,7 +104,6 @@ Para poder crear usuarios de prueba rápidamente sin requerir enlaces de verific
 Ve a **Authentication** $\rightarrow$ **Users** $\rightarrow$ **Add User** $\rightarrow$ **Create User** y registra las siguientes credenciales:
 * **Admin**: `admin@agregados.com` (Contraseña: `admin123`)
 * **Conductor**: `conductor@agregados.com` (Contraseña: `conductor123`)
-* **Constructora**: `constructora@agregados.com` (Contraseña: `constructora123`)
 
 Una vez creados los usuarios en Supabase Auth, ve a tu **SQL Editor** y ejecuta la siguiente consulta para darles su rol y metadata real:
 ```sql
