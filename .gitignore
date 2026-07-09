@@ -47,6 +47,4 @@ supabase/migrations/
 # Agent-specific files
 .agents/
 skills-lock.json
-
 .vercel
-.env*
