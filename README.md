@@ -44,7 +44,7 @@ Para salvaguardar la seguridad del código fuente y proteger las credenciales de
    Luego edita `.env.local` y añade tus credenciales privadas de Supabase:
    ```env
    VITE_SUPABASE_URL=https://tu-proyecto-id.supabase.co
-   VITE_SUPABASE_PUBLISHABLE_KEY=tu-publishable-key-segura
+   VITE_SUPABASE_ANON_KEY=tu-anon-key-segura
    ```
 
 ---
@@ -101,23 +101,33 @@ Para poder crear usuarios de prueba rápidamente sin requerir enlaces de verific
 3. Guarda los cambios.
 
 #### C. Crear Cuentas de Prueba e Inicializar Roles
-Ve a **Authentication** $\rightarrow$ **Users** $\rightarrow$ **Add User** $\rightarrow$ **Create User** y registra las siguientes credenciales:
-* **Admin**: `admin@agregados.com` (Contraseña: `admin123`)
-* **Conductor**: `conductor@agregados.com` (Contraseña: `conductor123`)
+Ve a **Authentication** $\rightarrow$ **Users** $\rightarrow$ **Add User** $\rightarrow$ **Create User** y registra las cuentas de prueba con correos de desarrollo y contraseñas robustas (por ejemplo: mínimo 8 caracteres con mayúsculas, minúsculas, números y símbolos):
 
-Una vez creados los usuarios en Supabase Auth, ve a tu **SQL Editor** y ejecuta la siguiente consulta para darles su rol y metadata real:
+* **Administrador**: `admin@tudominio.com` *(asigna una contraseña segura)*
+* **Conductor**: `conductor@tudominio.com` *(asigna una contraseña segura)*
+* **Cliente Constructora**: `constructora@tudominio.com` *(asigna una contraseña segura)*
+
+> [!IMPORTANT]
+> **Buenas Prácticas de Seguridad (OWASP / Secret Management)**:
+> Nunca guardes contraseñas en texto plano ni credenciales reales en la documentación, código fuente o commits de Git. Cada desarrollador debe aprovisionar sus propias credenciales en su entorno de trabajo.
+
+Una vez creados los usuarios en Supabase Auth, ve a tu **SQL Editor** y ejecuta la siguiente consulta para asociarles su rol correspondiente en la tabla pública de usuarios:
+
 ```sql
 -- 1. Asignar Administrador
-UPDATE public.usuarios SET rol = 'ADMINISTRADOR', nombre = 'Paolo Admin', dni = '74839201', celular = '987654321'
-WHERE id IN (SELECT id FROM auth.users WHERE email = 'admin@agregados.com');
+UPDATE public.usuarios 
+SET rol = 'ADMINISTRADOR', nombre = 'Administrador de Flota', dni = '74839201', celular = '987654321'
+WHERE id IN (SELECT id FROM auth.users WHERE email = 'admin@tudominio.com');
 
 -- 2. Asignar Conductor
-UPDATE public.usuarios SET rol = 'CONDUCTOR', nombre = 'Juan Conductor Pasco', dni = '87654321', celular = '912345678'
-WHERE id IN (SELECT id FROM auth.users WHERE email = 'conductor@agregados.com');
+UPDATE public.usuarios 
+SET rol = 'CONDUCTOR', nombre = 'Juan Conductor Pasco', dni = '87654321', celular = '912345678'
+WHERE id IN (SELECT id FROM auth.users WHERE email = 'conductor@tudominio.com');
 
 -- 3. Asignar Cliente Constructora
-UPDATE public.usuarios SET rol = 'CLIENTE', nombre = 'Constructora Los Andes S.A.C.', dni = '44556677', celular = '998877665', ruc = '20123456789'
-WHERE id IN (SELECT id FROM auth.users WHERE email = 'constructora@agregados.com');
+UPDATE public.usuarios 
+SET rol = 'CLIENTE', nombre = 'Constructora Los Andes S.A.C.', dni = '44556677', celular = '998877665', ruc = '20123456789'
+WHERE id IN (SELECT id FROM auth.users WHERE email = 'constructora@tudominio.com');
 ```
 
 #### D. Configurar Supabase Storage (Fotos de Tickets)
@@ -125,10 +135,18 @@ Para habilitar la carga física de las fotos de los tickets de balanza de los ch
 1. Ve a **Storage** $\rightarrow$ **New bucket**.
 2. Nómbralo exactamente: **`tickets-balanza`**.
 3. Configúralo como **Public bucket (ON)** y haz clic en crear.
-4. Ve a la pestaña **Policies** de Storage y ejecuta el siguiente SQL en el editor de base de datos para habilitar permisos de subida:
+4. Ve a la pestaña **Policies** de Storage y ejecuta el siguiente SQL en el editor de base de datos para restringir la subida únicamente a usuarios autenticados:
+
 ```sql
-CREATE POLICY "Permitir subidas en tickets-balanza" ON storage.objects FOR INSERT TO public WITH CHECK (bucket_id = 'tickets-balanza');
-CREATE POLICY "Permitir lectura en tickets-balanza" ON storage.objects FOR SELECT TO public USING (bucket_id = 'tickets-balanza');
+CREATE POLICY "Permitir subidas en tickets-balanza" 
+ON storage.objects FOR INSERT 
+TO authenticated 
+WITH CHECK (bucket_id = 'tickets-balanza');
+
+CREATE POLICY "Permitir lectura en tickets-balanza" 
+ON storage.objects FOR SELECT 
+TO authenticated 
+USING (bucket_id = 'tickets-balanza');
 ```
 
 ### 3. Ejecutar y Probar la Aplicación
@@ -136,10 +154,10 @@ Corre el servidor local de desarrollo:
 ```bash
 pnpm dev
 ```
-1. Entra a `http://localhost:5173/login` con `admin@agregados.com` $\rightarrow$ **Dashboard Admin**:
-   * Pestaña **Flota Vehicular**: Registra un nuevo volquete y asígnale a *Juan Conductor Pasco* (aparecerá en la lista).
-   * Pestaña **Pedidos de Obra**: Registra un pedido a nombre de *Constructora Los Andes S.A.C.* (aparecerá en la lista) y despáchalo asignándole el vehículo Scania creado.
-2. Abre una ventana de incógnito o en tu celular y loguéate con `conductor@agregados.com` $\rightarrow$ **Portal del Conductor**:
+1. Entra a `http://localhost:5173/login` con la cuenta de **Administrador** $\rightarrow$ **Dashboard Admin**:
+   * Pestaña **Flota Vehicular**: Registra un nuevo volquete y asígnale al conductor registrado.
+   * Pestaña **Pedidos de Obra**: Registra un pedido a nombre de la constructora cliente y despáchalo asignándole el vehículo creado.
+2. Abre una ventana de incógnito o en tu dispositivo móvil y loguéate con la cuenta del **Conductor** $\rightarrow$ **Portal del Conductor**:
    * Presiona **Iniciar Viaje** (puedes probar apagando el Wi-Fi en DevTools para ver el soporte offline en acción).
    * Rellena los pesajes de balanza y toma una foto de prueba del ticket (se guardará de forma nativa e invisible en IndexedDB si estás sin señal).
    * Presiona **Confirmar Entrega** para liberar los recursos.
