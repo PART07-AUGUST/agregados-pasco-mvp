@@ -21,7 +21,9 @@ export interface VehiculoConConductor extends Vehiculo {
 }
 
 function mapVehiculoRow(vehicle: VehiculoRow): VehiculoConConductor {
-  const getJoinedNombre = (relation: any): string => {
+  const getJoinedNombre = (
+    relation: { nombre: string | null } | Array<{ nombre: string | null }> | null | undefined
+  ): string => {
     if (!relation) return '';
     if (Array.isArray(relation)) {
       return relation[0]?.nombre || '';
