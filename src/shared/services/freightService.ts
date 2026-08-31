@@ -136,7 +136,37 @@ const routeCache = new Map<string, { distanceKm: number; durationMinutes: number
 
 export const freightService = {
   /**
-   * Calcula la ruta por carretera mediante la API OSRM
+   * Geocodifica una dirección real en Pasco vía OpenStreetMap Nominatim
+   */
+  async geocodeAddress(query: string): Promise<{ lat: number; lng: number; displayName: string } | null> {
+    if (!query || query.trim().length < 3) return null;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query.trim() + ', Pasco, Peru')}&format=json&limit=1`;
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: { 'User-Agent': 'AgregadosPascoMVP/1.0' },
+      });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          return {
+            lat: parseFloat(data[0].lat),
+            lng: parseFloat(data[0].lon),
+            displayName: data[0].display_name,
+          };
+        }
+      }
+    } catch {
+      // Ignorar fallo de geocodificación
+    }
+    return null;
+  },
+
+  /**
+   * Calcula la ruta por carretera en tiempo real mediante la API OSRM
    */
   async calculateRouteDistance(
     fromLat: number,
@@ -153,7 +183,7 @@ export const freightService = {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
       // OSRM Driving Public API (coordinates in order: lng,lat)
       const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=false`;
@@ -174,17 +204,16 @@ export const freightService = {
         }
       }
     } catch (err) {
-      console.warn('API OSRM de rutas no disponible, usando cálculo logístico estimado:', err);
+      console.warn('API OSRM de rutas no disponible:', err);
     }
 
-    // Fallback logístico basado en distancias reales de la zona de Pasco
     const distanceKm = fallbackKm;
     const durationMinutes = Math.round((distanceKm / 35) * 60) + 15;
     return { distanceKm, durationMinutes, isApiCalculated: false };
   },
 
   /**
-   * Calcula la cotización completa de material + flete
+   * Calcula la cotización completa de material + flete en base a distancias reales
    */
   async calculateFreightQuote(params: {
     material: string;
@@ -204,9 +233,21 @@ export const freightService = {
         destinationName.toLowerCase().includes(p.district.toLowerCase())
     );
 
-    const targetLat = params.destinationLat ?? preset?.lat ?? -10.6865;
-    const targetLng = params.destinationLng ?? preset?.lng ?? -76.2572;
+    let targetLat = params.destinationLat ?? preset?.lat;
+    let targetLng = params.destinationLng ?? preset?.lng;
     const fallbackKm = params.fallbackKm ?? preset?.estimatedKmFallback ?? 10.0;
+
+    // Si no coincide con preset y no tiene coordenadas, intentar geocodificar en vivo
+    if (!targetLat || !targetLng) {
+      const geo = await this.geocodeAddress(destinationName);
+      if (geo) {
+        targetLat = geo.lat;
+        targetLng = geo.lng;
+      } else {
+        targetLat = -10.6865;
+        targetLng = -76.2572;
+      }
+    }
 
     const { distanceKm, durationMinutes, isApiCalculated } = await this.calculateRouteDistance(
       quarry.lat,
