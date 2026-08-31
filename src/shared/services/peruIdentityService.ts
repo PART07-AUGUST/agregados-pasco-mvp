@@ -6,80 +6,28 @@ export interface DniResult {
   apellidoPaterno: string;
   apellidoMaterno: string;
   nombreCompleto: string;
-  fuente: 'RENIEC' | 'FALLBACK_LOCAL';
+  fuente: 'RENIEC';
 }
 
 export interface RucResult {
   ruc: string;
   razonSocial: string;
-  estado: string; // 'ACTIVO'
-  condicion: string; // 'HABIDO'
+  estado: string; // 'ACTIVO' | 'BAJA'
+  condicion: string; // 'HABIDO' | 'NO HABIDO'
   direccion?: string;
   departamento?: string;
   provincia?: string;
   distrito?: string;
-  fuente: 'SUNAT' | 'FALLBACK_LOCAL';
+  fuente: 'SUNAT';
 }
 
-// Caché en memoria para evitar consultas redundantes durante la sesión
+// Caché en memoria para evitar llamadas redundantes de un mismo documento en la sesión
 const dniCache = new Map<string, DniResult>();
 const rucCache = new Map<string, RucResult>();
 
-// Mock data contextual para Pasco en caso de falta de red o cuota excedida de APIs libres
-const MOCK_RUC_DATABASE: Record<string, Omit<RucResult, 'ruc' | 'fuente'>> = {
-  '20123456789': {
-    razonSocial: 'CONSTRUCTORA LOS ANDES S.A.C.',
-    estado: 'ACTIVO',
-    condicion: 'HABIDO',
-    direccion: 'Av. Las Brisas 240, Yanacancha',
-    departamento: 'PASCO',
-    provincia: 'PASCO',
-    distrito: 'YANACANCHA',
-  },
-  '20489123456': {
-    razonSocial: 'INGENIERIA Y MINERIA PASCO S.R.L.',
-    estado: 'ACTIVO',
-    condicion: 'HABIDO',
-    direccion: 'Jr. Bolognesi 105, Chaupimarca',
-    departamento: 'PASCO',
-    provincia: 'PASCO',
-    distrito: 'CHAUPIMARCA',
-  },
-  '20543216789': {
-    razonSocial: 'CONSORCIO VIAL CERRO DE PASCO',
-    estado: 'ACTIVO',
-    condicion: 'HABIDO',
-    direccion: 'Carretera Central Km 12, Tinyahuarco',
-    departamento: 'PASCO',
-    provincia: 'PASCO',
-    distrito: 'TINYAHUARCO',
-  },
-};
-
-const MOCK_DNI_DATABASE: Record<string, Omit<DniResult, 'dni' | 'fuente'>> = {
-  '74839201': {
-    nombres: 'PAOLO DANIEL',
-    apellidoPaterno: 'ROJAS',
-    apellidoMaterno: 'VALVERDE',
-    nombreCompleto: 'PAOLO DANIEL ROJAS VALVERDE',
-  },
-  '87654321': {
-    nombres: 'JUAN CARLOS',
-    apellidoPaterno: 'CONDOR',
-    apellidoMaterno: 'QUISPE',
-    nombreCompleto: 'JUAN CARLOS CONDOR QUISPE',
-  },
-  '44556677': {
-    nombres: 'MARCO ANTONIO',
-    apellidoPaterno: 'SOTO',
-    apellidoMaterno: 'MAYTA',
-    nombreCompleto: 'MARCO ANTONIO SOTO MAYTA',
-  },
-};
-
 export const peruIdentityService = {
   /**
-   * Consulta los datos de un DNI peruano (8 dígitos) ante RENIEC
+   * Consulta los datos reales de un DNI ante RENIEC
    */
   async consultarDni(dni: string): Promise<DniResult> {
     const cleanDni = dni.trim();
@@ -91,70 +39,64 @@ export const peruIdentityService = {
       return dniCache.get(cleanDni)!;
     }
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-      // Endpoint público de consulta rápida DNI
-      const response = await fetch(`https://api.decolecta.com/v1/reniec/dni?numero=${cleanDni}`, {
+    try {
+      const response = await fetch(`https://api.apis.net.pe/v1/dni?numero=${cleanDni}`, {
         signal: controller.signal,
-        headers: { 'Accept': 'application/json' },
-      }).catch(() => null);
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
 
       clearTimeout(timeoutId);
 
-      if (response && response.ok) {
-        const data = await response.json();
-        if (data && (data.nombres || data.nombreCompleto || data.first_name)) {
-          const nombres = (data.nombres || data.first_name || '').toUpperCase().trim();
-          const apellidoPaterno = (data.apellidoPaterno || data.last_name || '').toUpperCase().trim();
-          const apellidoMaterno = (data.apellidoMaterno || data.mother_last_name || '').toUpperCase().trim();
-          const nombreCompleto = data.nombreCompleto?.toUpperCase().trim() || 
-            `${nombres} ${apellidoPaterno} ${apellidoMaterno}`.trim();
-
-          const result: DniResult = {
-            dni: cleanDni,
-            nombres,
-            apellidoPaterno,
-            apellidoMaterno,
-            nombreCompleto,
-            fuente: 'RENIEC',
-          };
-          dniCache.set(cleanDni, result);
-          return result;
+      if (!response.ok) {
+        if (response.status === 404 || response.status === 422) {
+          throw new Error(`El DNI ${cleanDni} no fue encontrado en el padrón oficial de RENIEC.`);
         }
+        if (response.status === 429) {
+          throw new Error('Límite de consultas simultáneas alcanzado. Por favor, espera unos segundos.');
+        }
+        throw new Error(`Error en el servicio de RENIEC (Código HTTP ${response.status}).`);
       }
-    } catch (err) {
-      console.warn('API pública de DNI no disponible, recurriendo a fallback inteligente:', err);
-    }
 
-    // Fallback inteligente o simulación para pruebas
-    const mock = MOCK_DNI_DATABASE[cleanDni];
-    if (mock) {
+      const data = await response.json();
+
+      if (!data || (!data.nombre && !data.nombres)) {
+        throw new Error(`No se obtuvieron registros oficiales para el DNI ${cleanDni}.`);
+      }
+
+      const nombres = (data.nombres || '').toUpperCase().trim();
+      const apellidoPaterno = (data.apellidoPaterno || '').toUpperCase().trim();
+      const apellidoMaterno = (data.apellidoMaterno || '').toUpperCase().trim();
+      const nombreCompleto = (data.nombre || `${nombres} ${apellidoPaterno} ${apellidoMaterno}`).toUpperCase().trim();
+
       const result: DniResult = {
         dni: cleanDni,
-        ...mock,
-        fuente: 'FALLBACK_LOCAL',
+        nombres,
+        apellidoPaterno,
+        apellidoMaterno,
+        nombreCompleto,
+        fuente: 'RENIEC',
       };
+
       dniCache.set(cleanDni, result);
       return result;
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          throw new Error('Tiempo de espera agotado al conectar con RENIEC. Verifica tu conexión a internet.', { cause: err });
+        }
+        throw err;
+      }
+      throw new Error('Ocurrió un error al consultar los datos del DNI.', { cause: err });
     }
-
-    // Generador determinístico de nombres para cualquier DNI válido en ambiente de demo/desarrollo
-    const demoResult: DniResult = {
-      dni: cleanDni,
-      nombres: 'CIUDADANO',
-      apellidoPaterno: 'PASCO',
-      apellidoMaterno: `DNI-${cleanDni.slice(-4)}`,
-      nombreCompleto: `CIUDADANO PASCO DNI-${cleanDni.slice(-4)}`,
-      fuente: 'FALLBACK_LOCAL',
-    };
-    dniCache.set(cleanDni, demoResult);
-    return demoResult;
   },
 
   /**
-   * Consulta los datos de un RUC de empresa (11 dígitos) ante SUNAT
+   * Consulta los datos reales de un RUC ante la base oficial de SUNAT
    */
   async consultarRuc(ruc: string): Promise<RucResult> {
     const cleanRuc = ruc.trim();
@@ -166,68 +108,65 @@ export const peruIdentityService = {
       return rucCache.get(cleanRuc)!;
     }
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4500);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-      const response = await fetch(`https://api.decolecta.com/v1/sunat/ruc?numero=${cleanRuc}`, {
+    try {
+      const response = await fetch(`https://api.apis.net.pe/v1/ruc?numero=${cleanRuc}`, {
         signal: controller.signal,
-        headers: { 'Accept': 'application/json' },
-      }).catch(() => null);
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
 
       clearTimeout(timeoutId);
 
-      if (response && response.ok) {
-        const data = await response.json();
-        if (data && (data.razonSocial || data.nombre_o_razon_social)) {
-          const razonSocial = (data.razonSocial || data.nombre_o_razon_social || '').toUpperCase().trim();
-          const estado = (data.estado || 'ACTIVO').toUpperCase().trim();
-          const condicion = (data.condicion || 'HABIDO').toUpperCase().trim();
-
-          const result: RucResult = {
-            ruc: cleanRuc,
-            razonSocial,
-            estado,
-            condicion,
-            direccion: data.direccion || data.direccion_completa || '',
-            departamento: data.departamento || '',
-            provincia: data.provincia || '',
-            distrito: data.distrito || '',
-            fuente: 'SUNAT',
-          };
-          rucCache.set(cleanRuc, result);
-          return result;
+      if (!response.ok) {
+        if (response.status === 404 || response.status === 422) {
+          throw new Error(`El RUC ${cleanRuc} no es válido o no está registrado en el padrón de SUNAT.`);
         }
+        if (response.status === 429) {
+          throw new Error('Límite de consultas simultáneas alcanzado. Por favor, espera unos segundos.');
+        }
+        throw new Error(`Error en el servicio de SUNAT (Código HTTP ${response.status}).`);
       }
-    } catch (err) {
-      console.warn('API pública de SUNAT no disponible, recurriendo a fallback inteligente:', err);
-    }
 
-    // Fallback de base de datos mock para RUCs de prueba
-    const mock = MOCK_RUC_DATABASE[cleanRuc];
-    if (mock) {
+      const data = await response.json();
+
+      if (!data || (!data.nombre && !data.razonSocial)) {
+        throw new Error(`No se encontró información tributaria para el RUC ${cleanRuc}.`);
+      }
+
+      const razonSocial = (data.nombre || data.razonSocial || '').toUpperCase().trim();
+      const estado = (data.estado || 'ACTIVO').toUpperCase().trim();
+      const condicion = (data.condicion || 'HABIDO').toUpperCase().trim();
+      const direccion = (data.direccion || '').trim();
+      const departamento = (data.departamento || '').trim();
+      const provincia = (data.provincia || '').trim();
+      const distrito = (data.distrito || '').trim();
+
       const result: RucResult = {
         ruc: cleanRuc,
-        ...mock,
-        fuente: 'FALLBACK_LOCAL',
+        razonSocial,
+        estado,
+        condicion,
+        direccion,
+        departamento,
+        provincia,
+        distrito,
+        fuente: 'SUNAT',
       };
+
       rucCache.set(cleanRuc, result);
       return result;
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          throw new Error('Tiempo de espera agotado al conectar con SUNAT. Verifica tu conexión a internet.', { cause: err });
+        }
+        throw err;
+      }
+      throw new Error('Ocurrió un error al consultar los datos del RUC.', { cause: err });
     }
-
-    // Generador de constructora para RUC en ambiente de demo/desarrollo
-    const demoResult: RucResult = {
-      ruc: cleanRuc,
-      razonSocial: `CONSTRUCTORA & SERVICIOS PASCO RUC-${cleanRuc.slice(-4)} S.A.C.`,
-      estado: 'ACTIVO',
-      condicion: 'HABIDO',
-      direccion: 'Zona Industrial Cerro de Pasco',
-      departamento: 'PASCO',
-      provincia: 'PASCO',
-      distrito: 'YANACANCHA',
-      fuente: 'FALLBACK_LOCAL',
-    };
-    rucCache.set(cleanRuc, demoResult);
-    return demoResult;
   },
 };
