@@ -25,29 +25,48 @@ export function ClientDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   // Cargar pedidos del cliente (Supabase RLS filtra de forma automática)
-  const refreshData = useCallback(async (isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
+  const refreshData = useCallback(async () => {
+    setRefreshing(true);
     setError(null);
 
     try {
       const data = await ordersService.getOrders();
       setOrders(data);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Error cargando pedidos del cliente:', e);
       setError('Ocurrió un error al descargar la información logística desde Supabase.');
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    refreshData();
-  }, [refreshData]);
+    let active = true;
+
+    async function loadInitial() {
+      try {
+        const data = await ordersService.getOrders();
+        if (active) {
+          setOrders(data);
+        }
+      } catch (e: unknown) {
+        if (active) {
+          console.error('Error cargando pedidos del cliente:', e);
+          setError('Ocurrió un error al descargar la información logística desde Supabase.');
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadInitial();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -56,12 +75,12 @@ export function ClientDashboard() {
 
   const handleCancelOrder = async (id: string) => {
     await ordersService.updateOrderState(id, 'CANCELADO');
-    await refreshData(true);
+    await refreshData();
   };
 
   const handleOrderFormSuccess = async () => {
     setShowOrderForm(false);
-    await refreshData(true);
+    await refreshData();
   };
 
   // Cálculos de KPIs basados en la lista de pedidos del cliente
@@ -95,7 +114,7 @@ export function ClientDashboard() {
             </div>
             
             <button
-              onClick={() => refreshData(true)}
+              onClick={() => refreshData()}
               disabled={loading || refreshing}
               className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
               title="Refrescar datos"
