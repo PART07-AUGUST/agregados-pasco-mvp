@@ -163,9 +163,34 @@ pnpm dev
 
 ## 📋 Calidad y Estándares de Código
 
-* **Cero `@Suppress` y `@Ignore`**: Respeto estricto del análisis estático y tipado seguro.
+Para asegurar la calidad del código antes de enviar un commit o abrir un Pull Request, ejecuta los siguientes comandos en tu terminal:
+
+### 1. Análisis Estático (Linting)
+Verifica que el código cumpla con las reglas de ESLint y los hooks de React 19:
+```bash
+# Ejecutar verificación de linting
+pnpm run lint
+
+# Aplicar correcciones automáticas de formato y estilo
+pnpm exec eslint . --fix
+```
+
+### 2. Verificación de Tipos y Compilación (TypeScript + Vite)
+Garantiza que no existan errores de tipos ni imports rotos:
+```bash
+pnpm run build
+```
+
+### 3. Diagnóstico de Salud de React (React Doctor)
+Escanea el proyecto en busca de problemas de rendimiento, accesibilidad o malas prácticas:
+```bash
+npx react-doctor@latest --verbose --scope changed
+```
+
+### Principios de Desarrollo:
+* **Cero `@Suppress` y `@Ignore`**: Respeto estricto del análisis estático; siempre se soluciona la causa raíz.
 * **Una clase / componente por archivo**: Alta cohesión y mantenibilidad.
-* **Verificación continua**: Validado con `tsc -b && vite build` y escaneado con **React Doctor**.
+* **Pipeline automatizado**: Todo Pull Request es validado automáticamente por el workflow de GitHub Actions.
 
 ---
 
