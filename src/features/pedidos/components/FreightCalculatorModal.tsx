@@ -170,22 +170,28 @@ export function FreightCalculatorModal({
     if (!isOpen) return;
 
     const initialText = initialDestino.trim() || 'Yanacancha (San Juan)';
-    setCustomDestino(initialText);
+    const timeoutId = window.setTimeout(() => {
+      setCustomDestino(initialText);
 
-    // Buscar si coincide con preset inicial
-    const preset = PASCO_DESTINATION_PRESETS.find(
-      (p) =>
-        p.name.toLowerCase() === initialText.toLowerCase() ||
-        initialText.toLowerCase().includes(p.district.toLowerCase())
-    );
+      // Buscar si coincide con preset inicial
+      const preset = PASCO_DESTINATION_PRESETS.find(
+        (p) =>
+          p.name.toLowerCase() === initialText.toLowerCase() ||
+          initialText.toLowerCase().includes(p.district.toLowerCase())
+      );
 
-    if (preset) {
-      setSelectedPresetId(preset.id);
-      setDestinationCoords({ lat: preset.lat, lng: preset.lng });
-    } else {
-      setSelectedPresetId(null);
-      void searchAddress(initialText);
-    }
+      if (preset) {
+        setSelectedPresetId(preset.id);
+        setDestinationCoords({ lat: preset.lat, lng: preset.lng });
+      } else {
+        setSelectedPresetId(null);
+        void searchAddress(initialText);
+      }
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [isOpen, initialDestino, searchAddress]);
 
   // Recalcular cotización de flete automáticamente cada vez que cambien:
