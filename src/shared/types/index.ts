@@ -8,7 +8,25 @@ export interface User {
   celular?: string;
   dni?: string;
   ruc?: string;
+  licenciaConducir?: string;
+  activo?: boolean;
   createdAt: string;
+}
+
+export interface ConductorDetallado extends User {
+  vehiculoAsignado?: {
+    id: string;
+    placa: string;
+    marca: string;
+    modelo: string;
+    capacidadM3: number;
+  };
+  viajeActivo?: {
+    id: string;
+    estado: EstadoViaje;
+    destino?: string;
+    material?: string;
+  };
 }
 
 export interface Vehiculo {

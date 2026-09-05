@@ -8,7 +8,8 @@ import {
   LogOut, 
   Plus, 
   Activity, 
-  Scale
+  Scale,
+  Users
 } from 'lucide-react';
 import { useAuthStore } from '../shared/stores/useAuthStore';
 
@@ -16,6 +17,8 @@ import { useAuthStore } from '../shared/stores/useAuthStore';
 import { vehiclesService, type VehiculoConConductor } from '../shared/services/vehiclesService';
 import { ordersService, type Pedido } from '../shared/services/ordersService';
 import { tripsService, type ViajeDetallado } from '../shared/services/tripsService';
+import { driversService } from '../shared/services/driversService';
+import type { ConductorDetallado } from '../shared/types';
 
 // Componentes Reutilizables de Features
 import { VehiclesList } from '../features/vehiculos/components/VehiclesList';
@@ -23,6 +26,8 @@ import { VehicleForm } from '../features/vehiculos/components/VehicleForm';
 import { OrdersList } from '../features/pedidos/components/OrdersList';
 import { OrderForm } from '../features/pedidos/components/OrderForm';
 import { TripAssignModal } from '../features/viajes/components/TripAssignModal';
+import { DriversList } from '../features/conductores/components/DriversList';
+import { DriverForm } from '../features/conductores/components/DriverForm';
 import { getErrorMessage } from '../shared/utils/errors';
 
 export function AdminDashboard() {
@@ -30,10 +35,13 @@ export function AdminDashboard() {
   const { user, logout } = useAuthStore();
 
   // Estados de Pestañas y Ventanas modales
-  const [activeTab, setActiveTab] = useState<'monitoreo' | 'flota' | 'pedidos'>('monitoreo');
+  const [activeTab, setActiveTab] = useState<'monitoreo' | 'flota' | 'conductores' | 'pedidos'>('monitoreo');
   
   const [showVehicleForm, setShowVehicleForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<VehiculoConConductor | null>(null);
+
+  const [showDriverForm, setShowDriverForm] = useState(false);
+  const [editingDriver, setEditingDriver] = useState<ConductorDetallado | null>(null);
   
   const [showOrderForm, setShowOrderForm] = useState(false);
   
@@ -42,6 +50,7 @@ export function AdminDashboard() {
 
   // Estados de datos de Supabase
   const [vehicles, setVehicles] = useState<VehiculoConConductor[]>([]);
+  const [drivers, setDrivers] = useState<ConductorDetallado[]>([]);
   const [orders, setOrders] = useState<Pedido[]>([]);
   const [trips, setTrips] = useState<ViajeDetallado[]>([]);
 
@@ -53,15 +62,20 @@ export function AdminDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const [vData, oData, tData] = await Promise.all([
+      const [vData, oData, tData, dData] = await Promise.all([
         vehiclesService.getVehicles(),
         ordersService.getOrders(),
-        tripsService.getTrips()
+        tripsService.getTrips(),
+        driversService.getDrivers().catch((err: unknown) => {
+          console.warn('Advertencia al cargar conductores en panel:', err);
+          return [];
+        })
       ]);
       
       setVehicles(vData);
       setOrders(oData);
       setTrips(tData);
+      setDrivers(dData);
     } catch (loadError: unknown) {
       console.error('Error cargando recursos en dashboard:', loadError);
       setError(getErrorMessage(loadError, 'Ocurrió un error al descargar la información logística desde Supabase.'));
@@ -110,6 +124,28 @@ export function AdminDashboard() {
 
   const handleOrderFormSuccess = async () => {
     setShowOrderForm(false);
+    await refreshData();
+  };
+
+  // CRUD handlers: Conductores
+  const handleEditDriver = (driver: ConductorDetallado) => {
+    setEditingDriver(driver);
+    setShowDriverForm(true);
+  };
+
+  const handleToggleDriverStatus = async (driver: ConductorDetallado) => {
+    try {
+      await driversService.toggleDriverStatus(driver.id, !driver.activo);
+      await refreshData();
+    } catch (err: unknown) {
+      console.error('Error actualizando estado de conductor:', err);
+      setError(getErrorMessage(err, 'No se pudo cambiar el estado del conductor.'));
+    }
+  };
+
+  const handleDriverFormSuccess = async () => {
+    setShowDriverForm(false);
+    setEditingDriver(null);
     await refreshData();
   };
 
@@ -185,6 +221,15 @@ export function AdminDashboard() {
               <span>Flota Vehicular</span>
             </button>
             <button 
+              onClick={() => setActiveTab('conductores')}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                activeTab === 'conductores' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Users className="h-3.5 w-3.5" />
+              <span>Conductores</span>
+            </button>
+            <button 
               onClick={() => setActiveTab('pedidos')}
               className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                 activeTab === 'pedidos' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
@@ -195,20 +240,29 @@ export function AdminDashboard() {
             </button>
           </div>
 
-          <div className="flex gap-2 w-full md:w-auto">
+          <div className="flex flex-wrap gap-2 w-full md:w-auto">
             {activeTab === 'flota' && !showVehicleForm && (
               <button 
                 onClick={() => { setEditingVehicle(null); setShowVehicleForm(true); }}
-                className="w-full md:w-auto px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/10 flex items-center justify-center gap-1 cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/10 flex items-center justify-center gap-1 cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
                 <span>Agregar Vehículo</span>
               </button>
             )}
+            {activeTab === 'conductores' && !showDriverForm && (
+              <button 
+                onClick={() => { setEditingDriver(null); setShowDriverForm(true); }}
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/10 flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Nuevo Conductor</span>
+              </button>
+            )}
             {activeTab === 'pedidos' && !showOrderForm && (
               <button 
                 onClick={() => setShowOrderForm(true)}
-                className="w-full md:w-auto px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/10 flex items-center justify-center gap-1 cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/10 flex items-center justify-center gap-1 cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
                 <span>Registrar Pedido</span>
@@ -339,6 +393,28 @@ export function AdminDashboard() {
                     onDelete={handleDeleteVehicle}
                   />
                 </div>
+              </div>
+            )}
+
+            {/* PESTAÑA: CONDUCTORES */}
+            {activeTab === 'conductores' && (
+              <div className="space-y-6">
+                {showDriverForm && (
+                  <div className="max-w-4xl mx-auto">
+                    <DriverForm 
+                      onSuccess={handleDriverFormSuccess}
+                      onCancel={() => { setShowDriverForm(false); setEditingDriver(null); }}
+                      editingDriver={editingDriver}
+                      availableVehicles={vehicles}
+                    />
+                  </div>
+                )}
+
+                <DriversList 
+                  conductores={drivers}
+                  onEditDriver={handleEditDriver}
+                  onToggleStatus={handleToggleDriverStatus}
+                />
               </div>
             )}
 

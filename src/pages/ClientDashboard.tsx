@@ -6,19 +6,29 @@ import {
   Plus, 
   Loader2,
   RefreshCw,
-  MessageSquare
+  MessageSquare,
+  Compass
 } from 'lucide-react';
 import { useAuthStore } from '../shared/stores/useAuthStore';
 import { ordersService } from '../shared/services/ordersService';
 import type { Pedido } from '../shared/services/ordersService';
+import type { RouteCalculationResult } from '../shared/services/freightService';
 import { OrdersList } from '../features/pedidos/components/OrdersList';
-import { OrderForm } from '../features/pedidos/components/OrderForm';
+import { OrderForm, type OrderMaterialItem } from '../features/pedidos/components/OrderForm';
+import { FreightCalculatorModal } from '../features/pedidos/components/FreightCalculatorModal';
 
 export function ClientDashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
 
   const [showOrderForm, setShowOrderForm] = useState(false);
+  const [showFreightSimulator, setShowFreightSimulator] = useState(false);
+  const [preloadedOrderData, setPreloadedOrderData] = useState<{
+    destino: string;
+    items: OrderMaterialItem[];
+    quote: RouteCalculationResult;
+  } | null>(null);
+
   const [orders, setOrders] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -80,7 +90,28 @@ export function ClientDashboard() {
 
   const handleOrderFormSuccess = async () => {
     setShowOrderForm(false);
+    setPreloadedOrderData(null);
     await refreshData();
+  };
+
+  const handleApplySimulatorQuote = (params: {
+    destino: string;
+    volumenM3: number;
+    material: Pedido['material'];
+    materials: Array<{ material: Pedido['material']; volumenM3: number }>;
+    quote: RouteCalculationResult;
+  }) => {
+    setShowFreightSimulator(false);
+    setPreloadedOrderData({
+      destino: params.destino,
+      items: params.materials.map((m, idx) => ({
+        id: String(idx + 1),
+        material: m.material,
+        volumenM3: m.volumenM3,
+      })),
+      quote: params.quote,
+    });
+    setShowOrderForm(true);
   };
 
   // Cálculos de KPIs basados en la lista de pedidos del cliente
@@ -140,23 +171,35 @@ export function ClientDashboard() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-900 pb-4">
           <div>
             <h2 className="text-xl font-extrabold text-white">Consola Logística de Obras</h2>
-            <p className="text-xs text-slate-500 mt-1">Registra nuevos pedidos de material de cantera y haz seguimiento a los volquetes despachados</p>
+            <p className="text-xs text-slate-500 mt-1">Simula rutas de canteras, cotiza fletes por volumen y solicita materiales directamente a obra</p>
           </div>
 
-          <div className="flex gap-2 w-full md:w-auto">
+          <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full md:w-auto">
+            <button
+              onClick={() => setShowFreightSimulator(true)}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-amber-400 hover:bg-slate-850 hover:border-amber-500/40 active:scale-95 transition-all font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+              title="Simular rutas de canteras, fletes y cotizar materiales"
+            >
+              <Compass className="h-4 w-4 text-amber-500" />
+              <span>Simular Flete y Rutas</span>
+            </button>
+
             <a
               href="https://wa.me/51958292145"
               target="_blank"
               rel="noreferrer"
-              className="w-full md:w-auto px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-amber-400 hover:bg-slate-850 active:scale-95 transition-all font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-850 active:scale-95 transition-all font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <MessageSquare className="h-4 w-4 text-emerald-500" />
-              <span>Soporte Financiero</span>
+              <span>Soporte</span>
             </a>
 
             <button 
-              onClick={() => setShowOrderForm(true)}
-              className="w-full md:w-auto px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/10 flex items-center justify-center gap-1.5 cursor-pointer"
+              onClick={() => {
+                setPreloadedOrderData(null);
+                setShowOrderForm(true);
+              }}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/10 flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               <span>Solicitar Agregado</span>
@@ -225,11 +268,24 @@ export function ClientDashboard() {
           <div className="w-full max-w-lg">
             <OrderForm 
               onSuccess={handleOrderFormSuccess}
-              onCancel={() => setShowOrderForm(false)}
+              onCancel={() => {
+                setShowOrderForm(false);
+                setPreloadedOrderData(null);
+              }}
+              initialDestino={preloadedOrderData?.destino ?? ''}
+              initialItems={preloadedOrderData?.items}
+              initialQuote={preloadedOrderData?.quote ?? null}
             />
           </div>
         </div>
       )}
+
+      {/* Ventana Modal: Simulador y Cotizador de Fletes */}
+      <FreightCalculatorModal
+        isOpen={showFreightSimulator}
+        onClose={() => setShowFreightSimulator(false)}
+        onApply={handleApplySimulatorQuote}
+      />
 
       {/* Footer */}
       <footer className="mt-auto border-t border-slate-900 bg-slate-950 py-6">

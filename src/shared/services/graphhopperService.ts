@@ -46,7 +46,7 @@ export const graphhopperService = {
     fromLng: number,
     toLat: number,
     toLng: number,
-    preferredProfile: 'truck' | 'car' = 'truck'
+    preferredProfile: 'truck' | 'car' = 'car'
   ): Promise<GraphHopperRouteResult> {
     const cacheKey = `${fromLat.toFixed(4)},${fromLng.toFixed(4)}->${toLat.toFixed(4)},${toLng.toFixed(4)}_${preferredProfile}`;
     if (memoryCache.has(cacheKey)) {

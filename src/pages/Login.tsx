@@ -15,6 +15,8 @@ export function Login() {
         navigate('/admin', { replace: true });
       } else if (user.rol === 'CONDUCTOR') {
         navigate('/conductor', { replace: true });
+      } else if (user.rol === 'CLIENTE') {
+        navigate('/cliente', { replace: true });
       } else {
         navigate('/', { replace: true });
       }

@@ -47,6 +47,7 @@ export function LandingPage() {
                 onClick={() => {
                   if (user.rol === 'ADMINISTRADOR') navigate('/admin');
                   else if (user.rol === 'CONDUCTOR') navigate('/conductor');
+                  else if (user.rol === 'CLIENTE') navigate('/cliente');
                   else navigate('/');
                 }}
                 className="px-4 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-amber-400 hover:text-amber-500 text-xs font-bold active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
@@ -235,8 +236,27 @@ export function LandingPage() {
                   </li>
                 </ul>
               </div>
-              <div className="h-64 rounded-2xl bg-gradient-to-tr from-amber-500/10 to-amber-700/5 border border-slate-900 flex items-center justify-center">
-                <Truck className="h-20 w-20 text-amber-500/40 animate-pulse" />
+
+              <div className="h-64 sm:h-80 rounded-2xl border border-slate-800 relative overflow-hidden group shadow-xl bg-slate-950">
+                <img
+                  src="/images/flota-volquetes.jpg"
+                  alt="Camión volquete circulando por carretera de montaña"
+                  loading="lazy"
+                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                  onError={(e) => {
+                    // Fallback directo al CDN de Pexels si la ruta local no respondiera
+                    e.currentTarget.src = "https://images.pexels.com/photos/31310050/pexels-photo-31310050.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1";
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent pointer-events-none"></div>
+                <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center text-xs">
+                  <span className="bg-amber-500/20 border border-amber-500/30 text-amber-400 font-bold text-[11px] px-2.5 py-1 rounded-lg backdrop-blur-md">
+                    Flota de Alta Montaña · 4,380 msnm
+                  </span>
+                  <span className="text-slate-300 font-mono text-[10px] bg-slate-900/60 px-2 py-0.5 rounded backdrop-blur-sm">
+                    Tracción Pesada 6×4
+                  </span>
+                </div>
               </div>
             </div>
           )}

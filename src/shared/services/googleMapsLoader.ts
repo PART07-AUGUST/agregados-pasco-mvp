@@ -36,7 +36,7 @@ export function loadGoogleMaps(): Promise<typeof google.maps> {
 
     const script = document.createElement('script');
     script.type = 'text/javascript';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName}&loading=async&libraries=geometry`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=${callbackName}&loading=async&libraries=geometry,places,marker`;
     script.async = true;
     script.defer = true;
 
