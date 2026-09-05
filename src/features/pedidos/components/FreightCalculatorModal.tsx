@@ -19,6 +19,7 @@ import {
   type DestinationPreset,
   type RouteCalculationResult 
 } from '../../../shared/services/freightService';
+import { GoogleMapView } from '../../../shared/components/GoogleMapView';
 import type { Pedido } from '../../../shared/services/ordersService';
 
 interface FreightCalculatorModalProps {
@@ -74,7 +75,13 @@ export function FreightCalculatorModal({
     let active = true;
 
     async function computeQuote() {
-      const destinationName = selectedPreset?.name || customDestino.trim() || 'Yanacancha (San Juan)';
+      const destinationName = selectedPreset?.name || customDestino.trim();
+      if (!destinationName) {
+        setQuote(null);
+        setError('Selecciona una zona o ingresa una dirección real para calcular la ruta.');
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setError(null);
 
@@ -85,7 +92,6 @@ export function FreightCalculatorModal({
           destinationName,
           destinationLat: selectedPreset?.lat,
           destinationLng: selectedPreset?.lng,
-          fallbackKm: selectedPreset?.estimatedKmFallback,
         });
 
         if (active) {
@@ -138,7 +144,8 @@ export function FreightCalculatorModal({
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-xl bg-slate-950 border border-slate-850 text-slate-400 hover:text-white transition-all cursor-pointer"
+          aria-label="Cerrar calculadora de fletes"
+          className="absolute top-4 right-4 p-2 rounded-xl bg-slate-950 border border-slate-850 text-slate-400 hover:text-white transition-colors cursor-pointer"
         >
           <X className="h-4 w-4" />
         </button>
@@ -152,11 +159,11 @@ export function FreightCalculatorModal({
             <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
               Calculadora de Flete y Rutas de Agregados
               <span className="text-[10px] bg-amber-500/20 text-amber-400 font-mono px-2 py-0.5 rounded-full border border-amber-500/30">
-                API OSRM Live
+                GraphHopper + Google Maps
               </span>
             </h3>
             <p className="text-[11px] text-slate-400">
-              Cálculo de distancias satelitales desde Cantera Quiulacocha (Cerro de Pasco)
+              Rutas viales calculadas para camiones y volquetes desde Cantera Quiulacocha (Cerro de Pasco)
             </p>
           </div>
         </div>
@@ -183,11 +190,13 @@ export function FreightCalculatorModal({
 
             {/* Material */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+              <label htmlFor="material-select" className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                 <Layers className="h-3.5 w-3.5 text-amber-500" />
                 Tipo de Agregado
               </label>
               <select
+                id="material-select"
+                aria-label="Seleccionar tipo de agregado"
                 value={selectedMaterial}
                 onChange={(e) => setSelectedMaterial(e.target.value as Pedido['material'])}
                 className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2.5 outline-none text-white text-xs cursor-pointer"
@@ -257,7 +266,7 @@ export function FreightCalculatorModal({
                     }`}
                   >
                     <span className="text-[11px] truncate">{preset.name}</span>
-                    <span className="text-[9px] text-slate-500 font-mono">~{preset.estimatedKmFallback} km</span>
+                    <span className="text-[9px] text-slate-500 font-mono">Ruta calculada en vivo</span>
                   </button>
                 ))}
               </div>
@@ -284,33 +293,55 @@ export function FreightCalculatorModal({
             <div>
               <div className="flex items-center justify-between border-b border-slate-850 pb-3 mb-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Desglose Logístico Oficial
+                  Desglose Logístico Referencial
                 </span>
                 <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono">
-                  <Sparkles className="h-3 w-3" /> Tarifa Pasco 2026
+                  <Sparkles className="h-3 w-3" /> Ruta real + tarifa referencial
                 </span>
               </div>
 
-              {/* Indicadores de Ruta */}
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-                  <span className="text-[9px] text-slate-500 uppercase font-bold flex items-center gap-1">
+              {/* Indicadores de Ruta GraphHopper */}
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                  <span className="text-[9px] text-slate-400 uppercase font-bold flex items-center gap-1">
                     <Navigation className="h-3 w-3 text-amber-500" />
-                    Distancia OSRM
+                    Distancia (GraphHopper)
                   </span>
                   <p className="text-sm font-extrabold text-white font-mono mt-0.5">
                     {loading ? 'Calculando...' : `${quote?.distanceKm ?? '--'} km`}
                   </p>
                 </div>
-                <div className="p-3 bg-slate-900 rounded-xl border border-slate-800">
-                  <span className="text-[9px] text-slate-500 uppercase font-bold flex items-center gap-1">
+                <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                  <span className="text-[9px] text-slate-400 uppercase font-bold flex items-center gap-1">
                     <Clock className="h-3 w-3 text-amber-500" />
-                    Tiempo Tránsito
+                    Tiempo Volquete
                   </span>
                   <p className="text-sm font-extrabold text-white font-mono mt-0.5">
                     {loading ? '...' : `~${quote?.durationMinutes ?? '--'} min`}
                   </p>
                 </div>
+              </div>
+
+              {/* Altitud y Desnivel Andino (GraphHopper) */}
+              {quote?.ascendMeters !== undefined && (
+                <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900/60 rounded-lg border border-slate-850 text-[10px] text-slate-400 font-mono mb-3">
+                  <span>Desnivel: ⬆️ +{quote.ascendMeters}m / ⬇️ -{quote.descendMeters}m</span>
+                  <span className="text-amber-400 font-semibold">Perfil Carga Pesada</span>
+                </div>
+              )}
+
+              {/* Mapa Oficial Google Maps con Ruta Trazada */}
+              <div className="mb-3">
+                <GoogleMapView
+                  height="160px"
+                  origin={quote ? { lat: quote.quarry.lat, lng: quote.quarry.lng, title: quote.quarry.name } : undefined}
+                  destination={
+                    selectedPreset
+                      ? { lat: selectedPreset.lat, lng: selectedPreset.lng, title: selectedPreset.name }
+                      : undefined
+                  }
+                  routeCoordinates={quote?.routeCoordinates}
+                />
               </div>
 
               {/* Detalle de Costos */}
