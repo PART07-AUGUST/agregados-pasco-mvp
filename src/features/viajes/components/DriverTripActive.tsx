@@ -23,7 +23,12 @@ import { getErrorMessage } from '../../../shared/utils/errors';
 import { useDriverGeolocation } from '../../../shared/hooks/useDriverGeolocation';
 import { geolocationService } from '../../../shared/services/geolocationService';
 import { GoogleMapView } from '../../../shared/components/GoogleMapView';
-import { DEFAULT_QUARRY, PASCO_DESTINATION_PRESETS } from '../../../shared/services/freightService';
+import { 
+  DEFAULT_QUARRY, 
+  PASCO_DESTINATION_PRESETS,
+  freightService,
+  type RouteCalculationResult 
+} from '../../../shared/services/freightService';
 
 interface DriverTripActiveProps {
   trip: ViajeDetallado;
@@ -47,6 +52,8 @@ export function DriverTripActive({ trip, onRefresh }: DriverTripActiveProps) {
   });
 
   const [showInAppMap, setShowInAppMap] = useState<boolean>(false);
+  const [routeQuote, setRouteQuote] = useState<RouteCalculationResult | null>(null);
+  const [, setLoadingRoute] = useState<boolean>(false);
 
   // Determinar coordenadas de destino según preset o centro de Pasco
   const destinationPreset = PASCO_DESTINATION_PRESETS.find(
@@ -56,6 +63,39 @@ export function DriverTripActive({ trip, onRefresh }: DriverTripActiveProps) {
   );
   const destLat = destinationPreset?.lat ?? -10.6865;
   const destLng = destinationPreset?.lng ?? -76.2572;
+
+  // Cargar cálculo de ruta y tarifa de flete para el conductor
+  useEffect(() => {
+    let isMounted = true;
+    async function loadTripFreight() {
+      if (!trip.destino) return;
+      setLoadingRoute(true);
+      try {
+        const quote = await freightService.calculateFreightQuote({
+          material: trip.material || 'AFIRMADO',
+          volumenM3: trip.volumenM3 || 15,
+          destinationName: trip.destino,
+          destinationLat: destLat,
+          destinationLng: destLng,
+        });
+        if (isMounted) {
+          setRouteQuote(quote);
+        }
+      } catch (err: unknown) {
+        console.warn('No se pudo precargar la cotización de flete para el chofer:', err);
+      } finally {
+        if (isMounted) {
+          setLoadingRoute(false);
+        }
+      }
+    }
+
+    loadTripFreight();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [trip.destino, trip.material, trip.volumenM3, destLat, destLng]);
 
   const handleOpenGoogleMaps = () => {
     const navUrl = geolocationService.getGoogleMapsNavigationUrl(
@@ -283,6 +323,22 @@ export function DriverTripActive({ trip, onRefresh }: DriverTripActiveProps) {
             <p className="text-xs font-semibold text-slate-300">{trip.clienteNombre}</p>
           </div>
         )}
+
+        {/* Tarifa de Flete y Métricas de la Carrera Asignada */}
+        <div className="pt-2.5 border-t border-slate-900 grid grid-cols-2 gap-3 bg-slate-900/60 p-2.5 rounded-xl border border-slate-850">
+          <div>
+            <span className="text-[8.5px] text-amber-400 font-bold uppercase tracking-wider block">Tarifa Flete Asignada</span>
+            <p className="text-sm font-extrabold text-amber-400 font-mono">
+              {routeQuote ? `S/ ${routeQuote.freightTotal.toFixed(2)}` : 'Calculando flete...'}
+            </p>
+          </div>
+          <div>
+            <span className="text-[8.5px] text-slate-400 font-bold uppercase tracking-wider block">Distancia y Tránsito</span>
+            <p className="text-xs font-bold text-slate-200 font-mono mt-0.5">
+              {routeQuote ? `${routeQuote.distanceKm} km (~${routeQuote.durationMinutes} min)` : '--'}
+            </p>
+          </div>
+        </div>
       </div>
 
       {error && (
@@ -376,6 +432,7 @@ export function DriverTripActive({ trip, onRefresh }: DriverTripActiveProps) {
               origin={{ lat: DEFAULT_QUARRY.lat, lng: DEFAULT_QUARRY.lng, title: DEFAULT_QUARRY.name }}
               destination={{ lat: destLat, lng: destLng, title: trip.destino }}
               driverLocation={coords ? { lat: coords.latitude, lng: coords.longitude, title: `Volquete ${trip.placa}` } : undefined}
+              routeCoordinates={routeQuote?.routeCoordinates}
             />
           </div>
         )}
