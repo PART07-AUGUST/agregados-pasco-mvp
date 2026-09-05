@@ -58,7 +58,7 @@ export const driversService = {
    */
   async getDrivers(): Promise<ConductorDetallado[]> {
     // 1. Obtener los usuarios con rol CONDUCTOR (con fallback resiliente si faltan columnas de migración)
-    let usuarios: RawUsuarioRow[] = [];
+    let usuarios: RawUsuarioRow[];
     const { data: usuariosData, error: usuariosErr } = await supabase
       .from('usuarios')
       .select('id, email, nombre, rol, dni, celular, ruc, licencia_conducir, activo, created_at')
