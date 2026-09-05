@@ -12,11 +12,23 @@ import {
   FileText,
   Eye,
   Check,
+  Navigation,
+  Compass,
+  Radio,
 } from 'lucide-react';
 import type { ViajeDetallado } from '../../../shared/services/tripsService';
 import { tripsService } from '../../../shared/services/tripsService';
 import { storageService } from '../../../shared/services/storageService';
 import { getErrorMessage } from '../../../shared/utils/errors';
+import { useDriverGeolocation } from '../../../shared/hooks/useDriverGeolocation';
+import { geolocationService } from '../../../shared/services/geolocationService';
+import { GoogleMapView } from '../../../shared/components/GoogleMapView';
+import { 
+  DEFAULT_QUARRY, 
+  PASCO_DESTINATION_PRESETS,
+  freightService,
+  type RouteCalculationResult 
+} from '../../../shared/services/freightService';
 
 interface DriverTripActiveProps {
   trip: ViajeDetallado;
@@ -33,19 +45,72 @@ export function DriverTripActive({ trip, onRefresh }: DriverTripActiveProps) {
   const [uploadProgress, setUploadProgress] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const previousPreviewUrlRef = useRef<string | null>(null);
 
+  // Hook de GPS nativo en tiempo real para el chofer
+  const { coords, error: gpsError, isTracking, startTracking } = useDriverGeolocation({
+    autoStart: trip.estado === 'EN_CAMINO',
+  });
+
+  const [showInAppMap, setShowInAppMap] = useState<boolean>(false);
+  const [routeQuote, setRouteQuote] = useState<RouteCalculationResult | null>(null);
+  const [, setLoadingRoute] = useState<boolean>(false);
+
+  // Determinar coordenadas de destino según preset o centro de Pasco
+  const destinationPreset = PASCO_DESTINATION_PRESETS.find(
+    (p) =>
+      p.name.toLowerCase().includes((trip.destino || '').toLowerCase()) ||
+      (trip.destino || '').toLowerCase().includes(p.district.toLowerCase())
+  );
+  const destLat = destinationPreset?.lat ?? -10.6865;
+  const destLng = destinationPreset?.lng ?? -76.2572;
+
+  // Cargar cálculo de ruta y tarifa de flete para el conductor
   useEffect(() => {
-    if (previousPreviewUrlRef.current && previousPreviewUrlRef.current !== previewUrl) {
-      URL.revokeObjectURL(previousPreviewUrlRef.current);
+    let isMounted = true;
+    async function loadTripFreight() {
+      if (!trip.destino) return;
+      setLoadingRoute(true);
+      try {
+        const quote = await freightService.calculateFreightQuote({
+          material: trip.material || 'AFIRMADO',
+          volumenM3: trip.volumenM3 || 15,
+          destinationName: trip.destino,
+          destinationLat: destLat,
+          destinationLng: destLng,
+        });
+        if (isMounted) {
+          setRouteQuote(quote);
+        }
+      } catch (err: unknown) {
+        console.warn('No se pudo precargar la cotización de flete para el chofer:', err);
+      } finally {
+        if (isMounted) {
+          setLoadingRoute(false);
+        }
+      }
     }
 
-    previousPreviewUrlRef.current = previewUrl;
+    loadTripFreight();
 
     return () => {
-      if (previousPreviewUrlRef.current) {
-        URL.revokeObjectURL(previousPreviewUrlRef.current);
-        previousPreviewUrlRef.current = null;
+      isMounted = false;
+    };
+  }, [trip.destino, trip.material, trip.volumenM3, destLat, destLng]);
+
+  const handleOpenGoogleMaps = () => {
+    const navUrl = geolocationService.getGoogleMapsNavigationUrl(
+      destLat,
+      destLng,
+      coords?.latitude,
+      coords?.longitude
+    );
+    window.open(navUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
       }
     };
   }, [previewUrl]);
@@ -71,8 +136,19 @@ export function DriverTripActive({ trip, onRefresh }: DriverTripActiveProps) {
     }
 
     const file = e.target.files[0];
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleClearPhoto = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFile(null);
+    setPreviewUrl(null);
   };
 
   const handleRegisterWeighing = async (e: FormEvent) => {
@@ -247,6 +323,22 @@ export function DriverTripActive({ trip, onRefresh }: DriverTripActiveProps) {
             <p className="text-xs font-semibold text-slate-300">{trip.clienteNombre}</p>
           </div>
         )}
+
+        {/* Tarifa de Flete y Métricas de la Carrera Asignada */}
+        <div className="pt-2.5 border-t border-slate-900 grid grid-cols-2 gap-3 bg-slate-900/60 p-2.5 rounded-xl border border-slate-850">
+          <div>
+            <span className="text-[8.5px] text-amber-400 font-bold uppercase tracking-wider block">Tarifa Flete Asignada</span>
+            <p className="text-sm font-extrabold text-amber-400 font-mono">
+              {routeQuote ? `S/ ${routeQuote.freightTotal.toFixed(2)}` : 'Calculando flete...'}
+            </p>
+          </div>
+          <div>
+            <span className="text-[8.5px] text-slate-400 font-bold uppercase tracking-wider block">Distancia y Tránsito</span>
+            <p className="text-xs font-bold text-slate-200 font-mono mt-0.5">
+              {routeQuote ? `${routeQuote.distanceKm} km (~${routeQuote.durationMinutes} min)` : '--'}
+            </p>
+          </div>
+        </div>
       </div>
 
       {error && (
@@ -256,10 +348,100 @@ export function DriverTripActive({ trip, onRefresh }: DriverTripActiveProps) {
         </div>
       )}
 
+      {/* Panel de Geolocalización y Navegación con Google Maps (Visible siempre en el viaje activo) */}
+      <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isTracking ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+              <span className={`relative inline-flex rounded-full h-3 w-3 ${isTracking ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            </span>
+            <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <Radio className="h-3.5 w-3.5 text-emerald-400" />
+              GPS de Conductor en Vivo
+            </span>
+          </div>
+          <span className="text-[10px] text-slate-400 font-mono">
+            {isTracking ? 'Transmitiendo posición' : 'GPS Listo / Inactivo'}
+          </span>
+        </div>
+
+        {coords ? (
+          <div className="grid grid-cols-2 gap-2 text-[10px] bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 font-mono">
+            <div>
+              <span className="text-slate-500 block">Coordenadas:</span>
+              <span className="text-slate-200 font-bold">{coords.latitude.toFixed(4)}, {coords.longitude.toFixed(4)}</span>
+            </div>
+            <div>
+              <span className="text-slate-500 block">Precisión GPS:</span>
+              <span className="text-emerald-400 font-bold">±{Math.round(coords.accuracy)} m</span>
+            </div>
+          </div>
+        ) : gpsError ? (
+          <div className="text-[11px] text-amber-400 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20 flex items-center justify-between">
+            <span>⚠️ {gpsError.message || 'Permiso de ubicación denegado o no disponible.'}</span>
+            <button
+              type="button"
+              onClick={startTracking}
+              className="px-2 py-1 bg-amber-500 text-slate-950 rounded-md text-[10px] font-bold cursor-pointer"
+            >
+              Activar GPS
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between text-[11px] text-slate-400 bg-slate-900/40 p-2 rounded-xl border border-slate-850">
+            <span>{isTracking ? 'Sincronizando satélites GPS...' : 'GPS disponible para navegación'}</span>
+            {!isTracking && (
+              <button
+                type="button"
+                onClick={startTracking}
+                className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-md text-[10px] font-bold cursor-pointer transition-colors"
+              >
+                Conectar GPS
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Botones de Acción de Google Maps */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+          <button
+            type="button"
+            onClick={handleOpenGoogleMaps}
+            className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-colors cursor-pointer"
+          >
+            <Compass className="h-4 w-4" />
+            <span>Navegar en App Google Maps</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowInAppMap((prev) => !prev)}
+            className="w-full py-2.5 px-3 bg-slate-850 hover:bg-slate-800 active:scale-95 text-slate-200 font-semibold text-xs rounded-xl flex items-center justify-center gap-2 border border-slate-750 transition-colors cursor-pointer"
+          >
+            <Navigation className="h-3.5 w-3.5 text-amber-500" />
+            <span>{showInAppMap ? 'Ocultar Mapa' : 'Ver Mapa en Pantalla'}</span>
+          </button>
+        </div>
+
+        {/* Mapa Interactivo de Google Maps Embebido */}
+        {showInAppMap && (
+          <div className="pt-2">
+            <GoogleMapView
+              height="220px"
+              origin={{ lat: DEFAULT_QUARRY.lat, lng: DEFAULT_QUARRY.lng, title: DEFAULT_QUARRY.name }}
+              destination={{ lat: destLat, lng: destLng, title: trip.destino }}
+              driverLocation={coords ? { lat: coords.latitude, lng: coords.longitude, title: `Volquete ${trip.placa}` } : undefined}
+              routeCoordinates={routeQuote?.routeCoordinates}
+            />
+          </div>
+        )}
+      </div>
+
       {trip.estado === 'PENDIENTE' && (
         <div className="space-y-3.5">
           <div className="p-3.5 bg-amber-500/5 border border-amber-500/10 rounded-xl text-[11px] text-slate-400 leading-normal">
-            ℹ️ **Indicaciones de Salida**: Una vez que tu volquete esté cargado con el agregado correspondiente en la cantera y listo para partir, presiona el botón de abajo para notificar al centro de control.
+            ℹ️ **Indicaciones de Salida**: Revisa la ruta en Google Maps arriba. Una vez que tu volquete esté cargado con el agregado correspondiente en la cantera y listo para partir, presiona el botón de abajo para notificar al centro de control.
           </div>
 
           <button
@@ -274,11 +456,13 @@ export function DriverTripActive({ trip, onRefresh }: DriverTripActiveProps) {
       )}
 
       {trip.estado === 'EN_CAMINO' && (
-        <form onSubmit={(event) => void handleRegisterWeighing(event)} className="space-y-4">
-          <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-200 border-b border-slate-800 pb-2">
-            <Scale className="h-4 w-4 text-indigo-400" />
-            <span>Formulario de Pesaje en Balanza</span>
-          </div>
+        <div className="space-y-4">
+
+          <form onSubmit={(event) => void handleRegisterWeighing(event)} className="space-y-4">
+            <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-200 border-b border-slate-800 pb-2">
+              <Scale className="h-4 w-4 text-indigo-400" />
+              <span>Formulario de Pesaje en Balanza</span>
+            </div>
 
           <p className="text-[10px] text-slate-400 leading-normal">
             Ingresa los pesos registrados por la balanza autorizada en toneladas e inmortaliza el ticket de pesaje mediante una fotografía.
@@ -341,10 +525,7 @@ export function DriverTripActive({ trip, onRefresh }: DriverTripActiveProps) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedFile(null);
-                    setPreviewUrl(null);
-                  }}
+                  onClick={handleClearPhoto}
                   className="p-1.5 bg-slate-900 border border-slate-800 rounded-lg text-rose-400 hover:bg-rose-500/15 transition-all cursor-pointer mr-1"
                 >
                   Cambiar
@@ -362,6 +543,7 @@ export function DriverTripActive({ trip, onRefresh }: DriverTripActiveProps) {
             <span>{uploadProgress ? 'SUBIENDO IMAGEN DEL TICKET...' : 'REGISTRAR PESOS Y AVANZAR'}</span>
           </button>
         </form>
+        </div>
       )}
 
       {trip.estado === 'EN_BALANZA' && (
