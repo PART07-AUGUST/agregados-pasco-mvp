@@ -1,174 +1,174 @@
-# 🚛 Agregados Pasco - MVP de Control Logístico
+# 🚛 Agregados Pasco — Sistema Integral de Control Logístico y Flotas
 
-> **Producto Mínimo Viable (MVP) para la gestión y transporte de agregados (arena, piedra, afirmado), ambientado operativamente en Cerro de Pasco, Perú (4,380 m s.n.m.).**
+> **Plataforma web de última generación para la gestión, transporte y despacho de agregados de cantera (arena, grava, piedra chancada y afirmado), diseñada para operaciones de alta montaña en Cerro de Pasco, Perú (4,380 m s.n.m.).**
 
-Este sistema web está diseñado para conectar de manera segura y eficiente a administradores de flota, conductores de volquetes y constructoras clientes, optimizando el ciclo logístico de cantera a obra, incluso bajo condiciones extremas y de baja conectividad altoandina.
+Este sistema interconecta en tiempo real a **Administradores de Flota**, **Conductores de Volquetes** y **Empresas Constructoras**, garantizando trazabilidad de pesajes, cálculo geoespacial de fletes y continuidad operativa bajo condiciones extremas y baja cobertura celular mediante una arquitectura **Offline-First**.
 
 ---
 
-## 📌 Contexto de Negocio
+## 📌 Contexto de Negocio y Operación Altoandina
 
-El transporte de materiales de construcción en Cerro de Pasco afronta dos grandes desafíos:
-1. **Altitud y Clima Extremo**: Exige el control de flotas con volquetes de doble tracción aptos para torque a gran altura.
-2. **Brecha de Conectividad**: Las canteras principales (*Quiulacocha*, *Tinyahuarco*) carecen de cobertura celular estable. Este MVP implementa una arquitectura **Offline-First** (apoyada en **IndexedDB**) que permite a los conductores registrar tickets de balanza de forma local en el navegador y sincronizarlos automáticamente al recuperar señal.
+El transporte de materiales de construcción en el altiplano de Pasco enfrenta condiciones logísticas únicas:
+1. **Rutas Extremas y Altura**: Requiere volquetes de doble tracción (6x4 y 8x4) preparados para pendientes pronunciadas y motores certificados para alta montaña.
+2. **Georreferenciación de Canteras**: Despachos desde las canteras estratégicas de la región (*Quiulacocha*, *Tinyahuarco*, *Chicrín*, *Huaraucaca*).
+3. **Brecha de Conectividad en Cantera**: Las zonas de carga carecen frecuentemente de señal móvil. La aplicación implementa persistencia local en **IndexedDB**, permitiendo a los choferes registrar pesajes y fotos de tickets de balanza sin conexión; la sincronización se realiza automáticamente al recuperar cobertura.
+
+---
+
+## 🚀 Módulos del Sistema
+
+### 1. 🏗️ Portal de Constructoras / Clientes
+* **Simulador Logístico Geoespacial**: Estimación de flete en tiempo real integrando **Google Maps Platform** y **GraphHopper Routing**.
+* **Cálculo Inteligente de Fletes**: Considera costo base por viaje, flete por tonelada-kilómetro (según material y peso específico) y distancia exacta por carretera.
+* **Transformación Directa a Pedido**: Convierte la cotización en una orden formal de despacho hacia la obra con un solo clic.
+* **Trazabilidad de Despachos**: Historial de pedidos y estado de entrega de cada volquete.
+
+### 2. 🚛 Portal Móvil del Conductor (Offline-First)
+* **UI Adaptativa para Cabina**: Interfaz ergonómica de alto contraste diseñada para pantallas de smartphones en campo.
+* **Flujo Secuencial de Despacho**: Estados controlados (*Pendiente $\rightarrow$ En Camino $\rightarrow$ En Balanza $\rightarrow$ Entregado*).
+* **Control de Pesaje de Balanza**: Registro de peso tara (entrada) y peso bruto (salida) con cálculo automático de carga neta.
+* **Captura de Ticket de Balanza**: Fotografía del comprobante físico respaldada en **IndexedDB** y subida a **Supabase Storage**.
+
+### 3. ⚙️ Consola de Control de Flotas (Administrador)
+* **Monitoreo de Despacho en Vivo**: Tablero centralizado de volquetes en ruta, tiempos de entrega y pesajes registrados.
+* **Gestión de Flota Vehicular**: Registro técnico de volquetes (marca, modelo, placa de rodaje MTC y capacidad volumétrica en m³).
+* **Gestión de Conductores**:
+  * Nómina de choferes con validación de DNI (8 dígitos) y Brevete MTC (`licencia_conducir`).
+  * Enlace directo a **WhatsApp** (`wa.me`) con mensaje preconfigurado para coordinaciones inmediatas en ruta.
+  * Vinculación en un clic con volquetes de la flota.
+  * **Aprovisionamiento Seguro de Credenciales**: Creación de usuarios en `auth.users` mediante funciones PostgreSQL con `SECURITY DEFINER` (sin cerrar la sesión del Administrador).
+* **Despacho y Asignación de Pedidos**: Asignación ágil de órdenes a camiones disponibles.
+
+### 4. 🌐 Landing Page & Catálogo Industrial
+* Vitrina digital institucional con diseño industrial moderno (Slate/Amber).
+* Galería de flota de carga pesada adaptada a geografía andina.
+* Acceso directo a cotizaciones y autenticación protegida por roles.
 
 ---
 
 ## 🛠️ Stack Tecnológico
 
-El proyecto está construido bajo una arquitectura limpia sin servidores intermedios, conectando de forma directa al cliente React con el motor transaccional y seguridad de Supabase.
-
-* **Frontend**: React 19 + Vite 8 + TypeScript (Estricto).
-* **Styling**: Tailwind CSS v4 (mediante el plugin oficial `@tailwindcss/vite`).
-* **Estado e Iconos**: Zustand (gestión de estado ligero) + Lucide Icons.
-* **Persistencia Local**: IndexedDB nativo de alto rendimiento (para soporte offline y retención de imágenes binarias).
-* **Backend como Servicio (BaaS)**: Supabase (PostgreSQL + Auth + Storage).
-* **Seguridad y Control**: Row Level Security (RLS) + PostgreSQL Triggers + RPC Functions.
+* **Frontend**: React 19 + Vite 8 + TypeScript (Modo Estricto).
+* **Styling**: Tailwind CSS v4 + Lucide React Icons.
+* **Gestión de Estado**: Zustand (estado global ligero y reactivo).
+* **Mapas y Georreferenciación**:
+  * **Google Maps JavaScript API** (visualización cartográfica satelital y terreno).
+  * **GraphHopper API** (enrutamiento de carga pesada y perfiles de altimetría).
+* **Persistencia Offline**: IndexedDB nativo (almacenamiento binario de imágenes y cola de transacciones).
+* **Backend como Servicio (BaaS)**: Supabase (PostgreSQL 15+).
+  * **Row Level Security (RLS)**: Aislamiento estricto de datos por rol.
+  * **Stored Procedures / RPC**: Operaciones atómicas con privilegios elevados (`SECURITY DEFINER`).
+  * **Supabase Storage**: Bucket público/privado para comprobantes de pesaje.
 * **Gestor de Paquetes**: `pnpm` (exclusivo).
 
 ---
 
-## 🔐 Seguridad y Variables de Entorno
-
-Para salvaguardar la seguridad del código fuente y proteger las credenciales de infraestructura, el proyecto implementa las siguientes directivas:
-
-1. **Exclusión de Archivos Sensibles**:
-   * El archivo `.env.local` que almacena tus API keys de Supabase locales está configurado y excluido en [.gitignore](.gitignore) para evitar que se filtre accidentalmente en repositorios públicos.
-   * El archivo `.npmrc` restringe la descarga de dependencias con menos de **7 días de publicadas** (`minimum-release-age=10080`), protegiendo la base del código contra ataques de suplantación y malware en el supply chain.
-
-2. **Configuración de Variables de Entorno**:
-   Crea tu configuración local renombrando el archivo `.env.example`:
-   ```bash
-   cp .env.example .env.local
-   ```
-   Luego edita `.env.local` y añade tus credenciales privadas de Supabase:
-   ```env
-   VITE_SUPABASE_URL=https://tu-proyecto-id.supabase.co
-   VITE_SUPABASE_ANON_KEY=tu-anon-key-segura
-   ```
-
----
-
-## 📁 Estructura Modular del Proyecto (SOLID)
-
-La aplicación sigue una **arquitectura por capas desacoplada** combinada con **módulos por características (features)**:
+## 📁 Estructura del Proyecto (Clean Architecture & SOLID)
 
 ```txt
 src/
- ├── app/                  # Configuraciones globales y proveedores de contexto
- ├── features/             # Características modulares aisladas (SOLID)
- │    ├── auth/            # Módulo de Autenticación, sesión y roles
- │    ├── pedidos/         # Gestión de pedidos de constructoras
- │    ├── viajes/          # Control de viajes y OfflineQueueManager
- │    ├── vehiculos/       # Registro y estado de la flota de volquetes
- │    └── usuarios/        # Gestión de perfiles públicos
+ ├── app/                  # Proveedores de contexto y enrutador principal
+ ├── features/             # Módulos por dominio de negocio (Domain Features)
+ │    ├── auth/            # Inicio de sesión, control de acceso y RBAC
+ │    ├── conductores/     # Gestión de nómina de choferes y credenciales
+ │    ├── pedidos/         # Simulador de flete, cotizador y órdenes de obra
+ │    ├── vehiculos/       # Flota vehicular y volquetes
+ │    └── viajes/          # Ejecución de viajes, pesaje y sincronizador offline
  │
- ├── shared/               # Recursos transversales reutilizables
- │    ├── components/      # UI Atoms/Molecules transversales
- │    ├── hooks/           # Custom React hooks
- │    ├── services/        # Clientes de API e infraestructura (supabase.ts, offlineDb.ts)
- │    ├── types/           # Tipados e interfaces del dominio base
- │    └── validations/     # Funciones puras de validación de negocio
+ ├── pages/                # Vistas principales (Landing, Dashboards por Rol)
+ ├── shared/               # Componentes y utilidades transversales
+ │    ├── components/      # GoogleMapView, modales y átomos reutilizables
+ │    ├── hooks/           # Hooks de geolocalización, red y estado
+ │    ├── services/        # Clientes API (supabase, googleMapsLoader, freightService)
+ │    ├── stores/          # Stores Zustand (useAuthStore)
+ │    ├── types/           # Definiciones de tipos TypeScript del dominio
+ │    └── utils/           # Validaciones de DNI/MTC y manejo de errores
  │
- ├── main.tsx              # Punto de entrada de la aplicación
- └── index.css             # Estilos globales y tema industrial Slate/Amber
+ └── index.css             # Tema base y tokens de diseño
 ```
 
 ---
 
-## 🚦 Guía de Desarrollo y Pruebas Locales
+## ⚙️ Variables de Entorno
 
-### 1. Prerrequisitos e Instalación
-Tener instalado Node.js (v22 o superior) y el gestor de paquetes `pnpm` globalmente:
+Crea tu archivo `.env.local` a partir de la plantilla:
+
 ```bash
-npm install -g pnpm
-pnpm install
+cp .env.example .env.local
 ```
 
-### 2. Configurar Infraestructura de Supabase
-Para realizar pruebas transaccionales de extremo a extremo, configura tu instancia de Supabase de la siguiente manera:
+Configura las siguientes credenciales:
 
-#### A. Inicializar Base de Datos (Esquema y Relaciones)
-Ve al **SQL Editor** de Supabase, crea una nueva consulta y ejecuta el script completo de migraciones que se encuentra en:
+```env
+# Conexión a Supabase
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu-anon-key
+
+# Google Maps Platform (Mapas interactivos y geocodificación)
+VITE_GOOGLE_MAPS_API_KEY=tu-google-maps-api-key
+
+# GraphHopper Routing API (Cálculo de distancias y fletes)
+VITE_GRAPHHOPPER_API_KEY=tu-graphhopper-api-key
+```
+
+---
+
+## 🗄️ Configuración de Base de Datos (Supabase)
+
+Para desplegar la base de datos completa con soporte de fletes y conductores:
+
+### 1. Esquema Base
+En el **SQL Editor** de Supabase, ejecuta el script de inicio:
 * [supabase/migrations/20260527_init_schema.sql](supabase/migrations/20260527_init_schema.sql)
+*(Crea las tablas de usuarios, vehículos, pedidos, viajes y políticas RLS).*
 
-*(Este script inicializará las tablas, CHECK constraints para placas/DNI, disparadores y las funciones RPC como `asignar_viaje` y `registrar_ticket_balanza` bajo SECURITY DEFINER).*
+### 2. Módulo de Conductores y Credenciales Atómicas
+Ejecuta la migración de conductores:
+* [supabase/migrations/20260905_admin_create_driver_rpc.sql](supabase/migrations/20260905_admin_create_driver_rpc.sql)
+*(Habilita `pgcrypto`, agrega `email`, `licencia_conducir` y la función RPC `admin_crear_conductor`).*
 
-#### B. Configurar Supabase Auth (Desactivar Confirmación de Correo)
-Para poder crear usuarios de prueba rápidamente sin requerir enlaces de verificación de correo reales:
-1. Ve a **Authentication** $\rightarrow$ **Providers** $\rightarrow$ **Email**.
-2. Desactiva la casilla **Confirm Email**.
-3. Guarda los cambios.
-
-#### C. Crear Cuentas de Prueba e Inicializar Roles
-Ve a **Authentication** $\rightarrow$ **Users** $\rightarrow$ **Add User** $\rightarrow$ **Create User** y registra las cuentas de prueba con correos de desarrollo y contraseñas robustas (por ejemplo: mínimo 8 caracteres con mayúsculas, minúsculas, números y símbolos):
-
-* **Administrador**: `admin@tudominio.com` *(asigna una contraseña segura)*
-* **Conductor**: `conductor@tudominio.com` *(asigna una contraseña segura)*
-* **Cliente Constructora**: `constructora@tudominio.com` *(asigna una contraseña segura)*
-
-> [!IMPORTANT]
-> **Buenas Prácticas de Seguridad (OWASP / Secret Management)**:
-> Nunca guardes contraseñas en texto plano ni credenciales reales en la documentación, código fuente o commits de Git. Cada desarrollador debe aprovisionar sus propias credenciales en su entorno de trabajo.
-
-Una vez creados los usuarios en Supabase Auth, ve a tu **SQL Editor** y ejecuta la siguiente consulta para asociarles su rol correspondiente en la tabla pública de usuarios:
-
-```sql
--- 1. Asignar Administrador
-UPDATE public.usuarios 
-SET rol = 'ADMINISTRADOR', nombre = 'Administrador de Flota', dni = '74839201', celular = '987654321'
-WHERE id IN (SELECT id FROM auth.users WHERE email = 'admin@tudominio.com');
-
--- 2. Asignar Conductor
-UPDATE public.usuarios 
-SET rol = 'CONDUCTOR', nombre = 'Juan Conductor Pasco', dni = '87654321', celular = '912345678'
-WHERE id IN (SELECT id FROM auth.users WHERE email = 'conductor@tudominio.com');
-
--- 3. Asignar Cliente Constructora
-UPDATE public.usuarios 
-SET rol = 'CLIENTE', nombre = 'Constructora Los Andes S.A.C.', dni = '44556677', celular = '998877665', ruc = '20123456789'
-WHERE id IN (SELECT id FROM auth.users WHERE email = 'constructora@tudominio.com');
-```
-
-#### D. Configurar Supabase Storage (Fotos de Tickets)
-Para habilitar la carga física de las fotos de los tickets de balanza de los choferes:
-1. Ve a **Storage** $\rightarrow$ **New bucket**.
-2. Nómbralo exactamente: **`tickets-balanza`**.
-3. Configúralo como **Public bucket (ON)** y haz clic en crear.
-4. Ve a la pestaña **Policies** de Storage y ejecuta el siguiente SQL en el editor de base de datos para restringir la subida únicamente a usuarios autenticados:
-
+### 3. Configurar Storage de Tickets
+1. Ve a **Storage** $\rightarrow$ **New bucket** con el nombre exacto: **`tickets-balanza`** (público).
+2. En la pestaña **Policies**, aplica:
 ```sql
 CREATE POLICY "Permitir subidas en tickets-balanza" 
-ON storage.objects FOR INSERT 
-TO authenticated 
+ON storage.objects FOR INSERT TO authenticated 
 WITH CHECK (bucket_id = 'tickets-balanza');
 
 CREATE POLICY "Permitir lectura en tickets-balanza" 
-ON storage.objects FOR SELECT 
-TO authenticated 
+ON storage.objects FOR SELECT TO authenticated 
 USING (bucket_id = 'tickets-balanza');
 ```
 
-### 3. Ejecutar y Probar la Aplicación
-Corre el servidor local de desarrollo:
+---
+
+## 🚦 Ejecución en Desarrollo
+
+Instala las dependencias y corre el servidor Vite:
+
 ```bash
+pnpm install
 pnpm dev
 ```
-1. Entra a `http://localhost:5173/login` con la cuenta de **Administrador** $\rightarrow$ **Dashboard Admin**:
-   * Pestaña **Flota Vehicular**: Registra un nuevo volquete y asígnale al conductor registrado.
-   * Pestaña **Pedidos de Obra**: Registra un pedido a nombre de la constructora cliente y despáchalo asignándole el vehículo creado.
-2. Abre una ventana de incógnito o en tu dispositivo móvil y loguéate con la cuenta del **Conductor** $\rightarrow$ **Portal del Conductor**:
-   * Presiona **Iniciar Viaje** (puedes probar apagando el Wi-Fi en DevTools para ver el soporte offline en acción).
-   * Rellena los pesajes de balanza y toma una foto de prueba del ticket (se guardará de forma nativa e invisible en IndexedDB si estás sin señal).
-   * Presiona **Confirmar Entrega** para liberar los recursos.
+
+### Usuarios de Demostración y Pruebas E2E
+
+| Rol | Correo Sugerido | Propósito de Prueba |
+| :--- | :--- | :--- |
+| **Administrador** | `admin@tudominio.com` | Monitoreo en vivo, alta de volquetes y creación de choferes. |
+| **Conductor** | `conductor@tudominio.com` | Simulación móvil de viaje, pesaje en balanza y modo offline. |
+| **Constructora** | `constructora@tudominio.com` | Simulador de flete con mapas y generación de pedidos. |
 
 ---
 
-## 🛣️ Hoja de Ruta de Desarrollo
+## 📋 Calidad y Estándares de Código
 
-* **[x] Fase 1**: Configuración Base, Estructura Modular, Validaciones de Dominio y Landing Page.
-* **[x] Fase 2**: Diseño de Base de Datos SQL, Relaciones, Seguridad RLS y RPCs de Supabase.
-* **[x] Fase 3**: Autenticación, Control de Sesión y Perfiles de Usuarios por Roles.
-* **[x] Fase 4**: Panel de Control Administrativo (CRUD Pedidos, Vehículos y Asignación de Viajes).
-* **[x] Fase 5**: Interfaz Móvil para el Conductor (Pesaje, Carga de Fotos y Guía de Transporte).
-* **[x] Fase 6**: Mecanismo de Persistencia con IndexedDB y Sincronización Offline.
+* **Cero `@Suppress` y `@Ignore`**: Respeto estricto del análisis estático y tipado seguro.
+* **Una clase / componente por archivo**: Alta cohesión y mantenibilidad.
+* **Verificación continua**: Validado con `tsc -b && vite build` y escaneado con **React Doctor**.
+
+---
+
+## 📜 Licencia
+
+Desarrollado como proyecto MVP para la modernización de la cadena de suministro de construcción en la región Pasco. Todos los derechos reservados.
