@@ -1,10 +1,11 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { Truck, Users, Save, AlertCircle, X } from 'lucide-react';
+import { Truck, Users, Save, AlertCircle, X, Sparkles, RotateCcw } from 'lucide-react';
 import { vehiclesService } from '../../../shared/services/vehiclesService';
 import { supabase } from '../../../shared/services/supabase';
 import { validarPlaca } from '../../../shared/validations';
 import type { Vehiculo } from '../../../shared/types';
 import { getErrorMessage } from '../../../shared/utils/errors';
+import { CATALOGO_VEHICULOS_PESADOS } from '../constants/heavyVehiclesCatalog';
 
 interface VehicleFormProps {
   onSuccess: () => void;
@@ -24,6 +25,13 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
   const [capacidadM3, setCapacidadM3] = useState<number | ''>(editingVehicle?.capacidadM3 || '');
   const [conductorId, setConductorId] = useState(editingVehicle?.conductorId || '');
   const [activo, setActivo] = useState(editingVehicle?.activo !== undefined ? editingVehicle.activo : true);
+
+  // Determinar si la marca inicial proviene del catálogo o es personalizada
+  const brandInCatalog = CATALOGO_VEHICULOS_PESADOS.some(
+    (b) => b.marca.toLowerCase() === (editingVehicle?.marca || '').toLowerCase()
+  );
+  const [isCustomMarca, setIsCustomMarca] = useState(Boolean(editingVehicle?.marca && !brandInCatalog));
+  const [isCustomModelo, setIsCustomModelo] = useState(false);
 
   const [conductores, setConductores] = useState<ConductorOption[]>([]);
   const [loading, setLoading] = useState(false);
@@ -46,6 +54,41 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
     }
     loadConductores();
   }, []);
+
+  // Obtener la marca actual en el catálogo
+  const marcaSeleccionada = CATALOGO_VEHICULOS_PESADOS.find(
+    (b) => b.marca.toLowerCase() === marca.toLowerCase()
+  );
+
+  const handleMarcaChange = (val: string) => {
+    setError(null);
+    if (val === '__OTRA__') {
+      setIsCustomMarca(true);
+      setIsCustomModelo(true);
+      setMarca('');
+      setModelo('');
+    } else {
+      setIsCustomMarca(false);
+      setIsCustomModelo(false);
+      setMarca(val);
+      setModelo('');
+    }
+  };
+
+  const handleModeloSelect = (modelNombre: string) => {
+    setError(null);
+    if (modelNombre === '__OTRO__') {
+      setIsCustomModelo(true);
+      setModelo('');
+    } else {
+      setIsCustomModelo(false);
+      setModelo(modelNombre);
+      const modelObj = marcaSeleccionada?.modelos.find((m) => m.nombre === modelNombre);
+      if (modelObj) {
+        setCapacidadM3(modelObj.capacidadSugeridaM3);
+      }
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -129,20 +172,30 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
                 type="text" 
                 value={placa}
                 onChange={(e) => {
-                  setPlaca(e.target.value);
+                  setPlaca(e.target.value.toUpperCase());
                   setError(null);
                 }}
                 placeholder="ABC-123"
-                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2.5 outline-none font-mono text-white text-xs"
+                maxLength={8}
+                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2.5 outline-none font-mono text-white text-xs uppercase"
               />
             </div>
 
             {/* Capacidad */}
             <div className="space-y-1">
-              <label className="font-semibold text-slate-400">Capacidad (m³) *</label>
+              <div className="flex items-center justify-between">
+                <label className="font-semibold text-slate-400">Capacidad Tolva (m³) *</label>
+                {marcaSeleccionada && modelo && (
+                  <span className="text-[10px] text-amber-400 font-medium flex items-center gap-1">
+                    <Sparkles className="h-2.5 w-2.5" /> Sugerida
+                  </span>
+                )}
+              </div>
               <input 
                 type="number" 
-                step="0.1"
+                step="0.5"
+                min="1"
+                max="50"
                 value={capacidadM3}
                 onChange={(e) => {
                   setCapacidadM3(e.target.value !== '' ? parseFloat(e.target.value) : '');
@@ -157,32 +210,112 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Marca */}
             <div className="space-y-1">
-              <label className="font-semibold text-slate-400">Marca *</label>
-              <input 
-                type="text" 
-                value={marca}
-                onChange={(e) => {
-                  setMarca(e.target.value);
-                  setError(null);
-                }}
-                placeholder="Ej. Volvo"
-                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2.5 outline-none text-white text-xs"
-              />
+              <div className="flex items-center justify-between">
+                <label className="font-semibold text-slate-400">Marca de Camión *</label>
+                {isCustomMarca ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomMarca(false);
+                      setIsCustomModelo(false);
+                    }}
+                    className="text-[10px] text-amber-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                  >
+                    <RotateCcw className="h-2.5 w-2.5" /> Ver catálogo
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomMarca(true);
+                      setIsCustomModelo(true);
+                    }}
+                    className="text-[10px] text-slate-400 hover:text-amber-400 hover:underline cursor-pointer"
+                  >
+                    Escribir manual
+                  </button>
+                )}
+              </div>
+
+              {isCustomMarca ? (
+                <input 
+                  type="text" 
+                  value={marca}
+                  onChange={(e) => {
+                    setMarca(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder="Ej. Kenworth / Scania..."
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2.5 outline-none text-white text-xs"
+                />
+              ) : (
+                <select
+                  value={marca}
+                  onChange={(e) => handleMarcaChange(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2.5 outline-none text-white text-xs cursor-pointer"
+                >
+                  <option value="">-- Seleccionar Marca --</option>
+                  {CATALOGO_VEHICULOS_PESADOS.map((item) => (
+                    <option key={item.marca} value={item.marca}>
+                      {item.marca}
+                    </option>
+                  ))}
+                  <option value="__OTRA__">+ Otra marca no listada...</option>
+                </select>
+              )}
             </div>
 
             {/* Modelo */}
             <div className="space-y-1">
-              <label className="font-semibold text-slate-400">Modelo *</label>
-              <input 
-                type="text" 
-                value={modelo}
-                onChange={(e) => {
-                  setModelo(e.target.value);
-                  setError(null);
-                }}
-                placeholder="Ej. FMX 460"
-                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2.5 outline-none text-white text-xs"
-              />
+              <div className="flex items-center justify-between">
+                <label className="font-semibold text-slate-400">Modelo *</label>
+                {marcaSeleccionada && (
+                  isCustomModelo ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsCustomModelo(false)}
+                      className="text-[10px] text-amber-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                    >
+                      <RotateCcw className="h-2.5 w-2.5" /> Modelos sugeridos
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsCustomModelo(true)}
+                      className="text-[10px] text-slate-400 hover:text-amber-400 hover:underline cursor-pointer"
+                    >
+                      Escribir manual
+                    </button>
+                  )
+                )}
+              </div>
+
+              {!isCustomMarca && marcaSeleccionada && !isCustomModelo ? (
+                <select
+                  value={modelo}
+                  onChange={(e) => handleModeloSelect(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2.5 outline-none text-white text-xs cursor-pointer"
+                >
+                  <option value="">-- Seleccionar Modelo de {marca} --</option>
+                  {marcaSeleccionada.modelos.map((m) => (
+                    <option key={m.nombre} value={m.nombre}>
+                      {m.nombre} (Tolva ~{m.capacidadSugeridaM3} m³)
+                    </option>
+                  ))}
+                  <option value="__OTRO__">+ Otro modelo de {marca}...</option>
+                </select>
+              ) : (
+                <input 
+                  type="text" 
+                  value={modelo}
+                  onChange={(e) => {
+                    setModelo(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder={marca ? `Ej. Modelo de ${marca}` : 'Primero selecciona o ingresa la marca'}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2.5 outline-none text-white text-xs"
+                />
+              )}
             </div>
           </div>
 
