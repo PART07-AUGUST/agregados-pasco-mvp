@@ -21,7 +21,6 @@ dist-ssr/
 
 # Supabase local config
 supabase/.temp/
-supabase/migrations/
 
 # Credentials & Certificates
 *.pem

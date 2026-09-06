@@ -17,6 +17,7 @@ export interface User extends BaseEntity {
   ruc?: string;
   licenciaConducir?: string;
   activo?: boolean;
+  requiereCambioPassword?: boolean;
 }
 
 export interface ConductorDetallado extends User {
