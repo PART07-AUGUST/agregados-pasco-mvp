@@ -19,8 +19,9 @@ dist-ssr/
 .env.test.local
 .env.production.local
 
-# Supabase local config
+# Supabase local config & migrations
 supabase/.temp/
+supabase/migrations/
 
 # Credentials & Certificates
 *.pem
