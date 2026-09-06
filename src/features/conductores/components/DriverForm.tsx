@@ -253,7 +253,7 @@ export function DriverForm({
               <div className="space-y-1">
                 <label htmlFor="driver-password" className="font-semibold text-slate-400 flex justify-between">
                   <span>Contraseña Provisional</span>
-                  <span className="text-[10px] text-slate-500">Opcional (por defecto: Pasco&#123;DNI&#125;!)</span>
+                  <span className="text-[10px] text-amber-400/90">Obligatorio cambio en primer login</span>
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-2.5 text-slate-500 pointer-events-none">
@@ -264,7 +264,7 @@ export function DriverForm({
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Dejar vacío para autogenerar con DNI"
+                    placeholder="Dejar vacío para generar clave temporal segura"
                     className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500 rounded-xl pl-9 pr-3 py-2 outline-none text-white text-xs"
                   />
                 </div>

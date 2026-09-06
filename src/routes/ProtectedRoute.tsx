@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../shared/stores/useAuthStore';
 import type { UserRole } from '../shared/types';
+import { ForcePasswordChangeModal } from '../features/auth/components/ForcePasswordChangeModal';
 
 interface ProtectedRouteProps {
   allowedRoles?: UserRole[];
@@ -24,12 +25,21 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  // 3. Si se especificaron roles permitidos y el rol actual no está incluido, redirigimos a No Autorizado
+  // 3. Si se requiere cambio obligatorio de contraseña en primer login, interceptamos con el modal de seguridad
+  if (user.requiereCambioPassword) {
+    return (
+      <div className="min-h-screen bg-slate-950">
+        <ForcePasswordChangeModal />
+      </div>
+    );
+  }
+
+  // 4. Si se especificaron roles permitidos y el rol actual no está incluido, redirigimos a No Autorizado
   if (allowedRoles && !allowedRoles.includes(user.rol)) {
     return <Navigate to="/unauthorized" replace />;
   }
 
-  // 4. Si todo es correcto, renderizamos el Outlet del enrutador
+  // 5. Si todo es correcto, renderizamos el Outlet del enrutador
   return <Outlet />;
 }
 export default ProtectedRoute;

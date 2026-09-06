@@ -121,8 +121,10 @@ src/
 │   ├── constants/
 │   │   └── materials.ts                    # Single Source of Truth para nombres y precios de agregados
 │   ├── services/                           # Servicios de Infraestructura e I/O
+│   │   ├── driversService.ts               # Gestión de conductores y generación criptográfica de claves
 │   │   ├── freightService.ts               # Motor de fletes, presets y geocodificación multiescalón
 │   │   ├── graphhopperService.ts           # Cliente de enrutamiento por carretera y altimetría
+│   │   ├── storageService.ts               # Subida segura de tickets (validación 5MB, MIME y extensiones)
 │   │   ├── supabase.ts                     # Cliente Supabase PostgreSQL
 │   │   ├── tripsService.ts                 # Operaciones de viajes, pesaje y recursos de despacho
 │   │   └── vehiclesService.ts              # CRUD de flota vehicular
@@ -130,6 +132,12 @@ src/
 │       └── supabaseRelations.ts            # Mappers puros para uniones relacionales de Supabase
 │
 ├── features/                               # Módulos por Dominio de Negocio
+│   ├── auth/
+│   │   └── components/
+│   │       ├── LoginForm.tsx               # Acceso unificado por roles
+│   │       ├── RegisterForm.tsx            # Registro público forzado a rol CLIENTE
+│   │       └── ForcePasswordChangeModal    # Barrera de seguridad para cambio obligatorio en primer acceso
+│   │
 │   ├── pedidos/
 │   │   ├── components/
 │   │   │   ├── OrdersList.tsx              # Listado general de pedidos de obra
@@ -168,6 +176,35 @@ src/
 
 ---
 
+## 🛡️ Seguridad Integral y Migraciones de Base de Datos
+
+La plataforma aplica el principio de **Defensa en Profundidad** (*Defense in Depth*), garantizando que las restricciones críticas de negocio y datos residan en la base de datos (PostgreSQL / RLS) y no solo en la interfaz:
+
+1. **Inmutabilidad de Roles y Prevención de Escalada**:
+   - `handle_new_user()` asigna de forma inmutable el rol `'CLIENTE'`, ignorando cualquier payload de registro alterado desde el cliente.
+   - Trigger `BEFORE UPDATE ON public.usuarios` (`proteger_columna_rol`) que rechaza cualquier intento de auto-promoción de rol por parte de usuarios no administradores.
+2. **Aprovisionamiento y Cambio Obligatorio de Contraseñas**:
+   - Generación de claves temporales aleatorias de alta entropía mediante `crypto.getRandomValues()` en `driversService.ts`.
+   - Bandera `requiere_cambio_password` en `public.usuarios` activada en la creación del chofer.
+   - Interceptor en `ProtectedRoute.tsx` que despliega `ForcePasswordChangeModal.tsx`, bloqueando el acceso operativo hasta que el usuario establezca una clave personal y segura.
+3. **Hardening de Supabase Storage (`tickets-balanza`)**:
+   - RLS en `storage.objects` restringido para subidas exclusivamente a `CONDUCTOR` y `ADMINISTRADOR`.
+   - Validación de tipos MIME autorizados (`image/jpeg`, `image/png`, `image/webp`) y límite estricto de 5 MB por archivo.
+   - Protección contra listado masivo (`public_bucket_allows_listing`): el listado de archivos está reservado a Administradores, manteniendo las URLs de descarga públicas operativas.
+4. **Principio de Menor Privilegio (Least Privilege) en RPCs**:
+   - Blindaje de `SET search_path = public, auth, pg_temp;` en todas las funciones con privilegios elevados (`SECURITY DEFINER`).
+   - Revocación de `EXECUTE` a usuarios anónimos (`anon` y `PUBLIC`) en todas las funciones de negocio e internas de trigger.
+
+### Despliegue de Migraciones en Supabase:
+Las migraciones versionadas se encuentran en `supabase/migrations/`:
+- `20260527_seed_users_storage_and_trip_guards.sql`: Semilla base y políticas iniciales.
+- `20260905_admin_create_driver_rpc.sql`: Procedimiento atómico para registro de choferes.
+- `20260906_security_hardening.sql`: Script integral de hardening, inmutabilidad de roles y cierre de privilegios.
+
+Para aplicarlas, copie el contenido de la migración en el **SQL Editor** del panel de control de Supabase y ejecute el script.
+
+---
+
 ## 🛠️ Stack Tecnológico
 
 * **Frontend**: React 19 + Vite 8 + TypeScript (Modo Estricto).
@@ -179,9 +216,9 @@ src/
   * **Photon / Komoot OpenStreetMap** (geocodificación de alta velocidad con proximity bias).
 * **Persistencia Offline**: IndexedDB nativo (`offlineDb.ts`) para fotos de tickets y cola transaccional.
 * **Backend como Servicio (BaaS)**: Supabase (PostgreSQL 15+).
-  * **Row Level Security (RLS)**: Aislamiento por roles (`ADMIN`, `CONDUCTOR`, `CLIENTE`).
-  * **Stored Procedures (RPC)**: `asignar_viaje`, `registrar_ticket_balanza`, `confirmar_entrega`.
-  * **Supabase Storage**: Bucket público `tickets-balanza`.
+  * **Row Level Security (RLS)**: Aislamiento por roles (`ADMINISTRADOR`, `CONDUCTOR`, `CLIENTE`).
+  * **Stored Procedures (RPC)**: `asignar_viaje`, `registrar_ticket_balanza`, `confirmar_entrega`, `admin_crear_conductor`, `marcar_password_actualizada`.
+  * **Supabase Storage**: Bucket `tickets-balanza` con cuota de 5 MB y validación MIME.
 * **Gestor de Paquetes**: `pnpm` v11.4+.
 
 ---

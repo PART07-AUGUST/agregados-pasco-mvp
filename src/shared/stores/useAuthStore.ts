@@ -12,6 +12,7 @@ interface UserProfileRow {
   celular?: string | null;
   dni?: string | null;
   ruc?: string | null;
+  requiere_cambio_password?: boolean | null;
   created_at: string;
 }
 
@@ -25,6 +26,7 @@ interface AuthStore {
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<User | null>;
   logout: () => Promise<void>;
+  completePasswordChange: (newPassword: string) => Promise<void>;
 }
 
 let authSubscription: Subscription | null = null;
@@ -39,6 +41,7 @@ function mapProfileToUser(profile: UserProfileRow, session: Session | null): Use
     celular: profile.celular ?? undefined,
     dni: profile.dni ?? undefined,
     ruc: profile.ruc ?? undefined,
+    requiereCambioPassword: profile.requiere_cambio_password === true,
     createdAt: profile.created_at,
   };
 }
@@ -46,12 +49,22 @@ function mapProfileToUser(profile: UserProfileRow, session: Session | null): Use
 async function fetchUserProfile(session: Session): Promise<User> {
   const { data: profile, error } = await supabase
     .from('usuarios')
-    .select('id, nombre, rol, celular, dni, ruc, created_at')
+    .select('id, nombre, rol, celular, dni, ruc, requiere_cambio_password, created_at')
     .eq('id', session.user.id)
     .single<UserProfileRow>();
 
   if (error) {
-    throw error;
+    // Si la columna requiere_cambio_password aún no está migrada en la base de datos, fallback seguro
+    const { data: fallbackProfile, error: fallbackError } = await supabase
+      .from('usuarios')
+      .select('id, nombre, rol, celular, dni, ruc, created_at')
+      .eq('id', session.user.id)
+      .single<UserProfileRow>();
+
+    if (fallbackError || !fallbackProfile) {
+      throw error;
+    }
+    return mapProfileToUser(fallbackProfile, session);
   }
 
   return mapProfileToUser(profile, session);
@@ -205,6 +218,52 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         error: getErrorMessage(error, 'Error al cerrar sesión'),
         loading: false,
       });
+    }
+  },
+
+  completePasswordChange: async (newPassword: string) => {
+    set({ loading: true, error: null });
+
+    try {
+      // 1. Actualizar contraseña del usuario autenticado en Supabase Auth
+      const { error: authError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      // 2. Invocar RPC para desactivar la bandera de cambio obligatorio
+      const { error: rpcError } = await supabase.rpc('marcar_password_actualizada');
+
+      if (rpcError) {
+        console.warn('Fallo RPC marcar_password_actualizada, aplicando fallback:', rpcError.message);
+        await supabase
+          .from('usuarios')
+          .update({ requiere_cambio_password: false })
+          .eq('id', get().user?.id);
+      }
+
+      // 3. Sincronizar estado local en memoria
+      const currentUser = get().user;
+      if (currentUser) {
+        set({
+          user: {
+            ...currentUser,
+            requiereCambioPassword: false,
+          },
+          loading: false,
+          error: null,
+        });
+      } else {
+        set({ loading: false, error: null });
+      }
+    } catch (error: unknown) {
+      console.error('Error completando cambio obligatorio de contraseña:', error);
+      const msg = getErrorMessage(error, 'Error al actualizar la contraseña');
+      set({ error: msg, loading: false });
+      throw new Error(msg, { cause: error });
     }
   },
 }));
