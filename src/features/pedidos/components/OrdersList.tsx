@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { ClipboardCheck, Truck, ShieldX, ShieldAlert, Award, Info, X } from 'lucide-react';
+import { ClipboardCheck, Truck, ShieldX, ShieldAlert, Award, Info } from 'lucide-react';
 import type { Pedido } from '../../../shared/services/ordersService';
 import { getErrorMessage } from '../../../shared/utils/errors';
+import { getMaterialLabel } from '../../../shared/constants/materials';
+import { OrderDispatchDetailsModal } from './OrderDispatchDetailsModal';
 
 interface OrdersListProps {
   orders: Pedido[];
@@ -9,15 +11,6 @@ interface OrdersListProps {
   onCancelOrder: (id: string) => Promise<void>;
   isAdmin?: boolean;
 }
-
-const MATERIAL_LABELS: Record<string, string> = {
-  'ARENA_FINA': 'Arena Fina',
-  'ARENA_GRUESA': 'Arena Gruesa',
-  'PIEDRA_1_2': 'Piedra Chancada de 1/2"',
-  'PIEDRA_3_4': 'Piedra Chancada de 3/4"',
-  'AFIRMADO': 'Afirmado Clasificado',
-  'TIERRA_CHACRA': 'Tierra de Chacra'
-};
 
 export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = false }: OrdersListProps) {
   const [selectedDispatchOrder, setSelectedDispatchOrder] = useState<Pedido | null>(null);
@@ -80,7 +73,7 @@ export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = fal
                   
                   {/* Material */}
                   <td className="py-3.5 px-4">
-                    <span className="font-semibold text-slate-300">{MATERIAL_LABELS[p.material] || p.material}</span>
+                    <span className="font-semibold text-slate-300">{getMaterialLabel(p.material)}</span>
                   </td>
                   
                   {/* Volumen */}
@@ -168,72 +161,10 @@ export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = fal
 
       {/* Modal de Información de Despacho */}
       {selectedDispatchOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative max-w-sm w-full space-y-4 text-xs text-slate-300 animate-in zoom-in-95 duration-200">
-            <button 
-              type="button"
-              onClick={() => setSelectedDispatchOrder(null)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-slate-400 hover:text-white active:scale-95 transition-all cursor-pointer"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="flex items-center space-x-2 border-b border-slate-800 pb-3">
-              <Truck className="text-amber-500 h-5 w-5" />
-              <h4 className="text-sm font-bold text-white uppercase tracking-wider">
-                Detalles del Despacho
-              </h4>
-            </div>
-
-            <div className="space-y-4 py-1">
-              {selectedDispatchOrder.vehiculoPlaca && (
-                <div className="space-y-1.5">
-                  <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Volquete Asignado</span>
-                  <div className="font-mono text-xs text-white font-bold flex items-center gap-1.5">
-                    <span className="bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded text-[9px] font-extrabold">PLACA</span>
-                    <span>{selectedDispatchOrder.vehiculoPlaca}</span>
-                  </div>
-                  {(selectedDispatchOrder.vehiculoMarca || selectedDispatchOrder.vehiculoModelo) && (
-                    <span className="text-[10px] text-slate-400 block font-semibold">
-                      {selectedDispatchOrder.vehiculoMarca} {selectedDispatchOrder.vehiculoModelo}
-                    </span>
-                  )}
-                </div>
-              )}
-              
-              {selectedDispatchOrder.conductorNombre && (
-                <div className="space-y-1.5 pt-4 border-t border-slate-850">
-                  <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Chofer Encargado</span>
-                  <span className="text-white font-bold text-xs block">{selectedDispatchOrder.conductorNombre}</span>
-                  {selectedDispatchOrder.conductorCelular && (
-                    <div className="pt-1.5">
-                      <a 
-                        href={`https://wa.me/51${selectedDispatchOrder.conductorCelular}`} 
-                        target="_blank" 
-                        rel="noreferrer" 
-                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-xl font-bold transition-all text-[10.5px] cursor-pointer"
-                        title="Contactar por WhatsApp"
-                      >
-                        <span>💬 WhatsApp:</span>
-                        <span className="underline font-mono">{selectedDispatchOrder.conductorCelular}</span>
-                      </a>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="pt-3">
-              <button
-                type="button"
-                onClick={() => setSelectedDispatchOrder(null)}
-                className="w-full py-2.5 rounded-xl bg-slate-950 border border-slate-850 text-slate-400 hover:text-white active:scale-95 transition-all font-semibold cursor-pointer text-xs"
-              >
-                Cerrar Ventana
-              </button>
-            </div>
-          </div>
-        </div>
+        <OrderDispatchDetailsModal
+          order={selectedDispatchOrder}
+          onClose={() => setSelectedDispatchOrder(null)}
+        />
       )}
 
     </div>

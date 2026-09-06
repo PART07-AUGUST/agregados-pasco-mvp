@@ -1,7 +1,14 @@
 export type UserRole = 'ADMINISTRADOR' | 'CONDUCTOR' | 'CLIENTE';
 
-export interface User {
+/**
+ * Entidad base de dominio con identificador único y auditoría temporal.
+ */
+export interface BaseEntity {
   id: string;
+  createdAt?: string;
+}
+
+export interface User extends BaseEntity {
   email: string;
   nombre: string;
   rol: UserRole;
@@ -10,7 +17,6 @@ export interface User {
   ruc?: string;
   licenciaConducir?: string;
   activo?: boolean;
-  createdAt: string;
 }
 
 export interface ConductorDetallado extends User {
@@ -29,8 +35,7 @@ export interface ConductorDetallado extends User {
   };
 }
 
-export interface Vehiculo {
-  id: string;
+export interface Vehiculo extends BaseEntity {
   placa: string;
   marca: string;
   modelo: string;
@@ -41,8 +46,7 @@ export interface Vehiculo {
 
 export type EstadoViaje = 'PENDIENTE' | 'EN_CAMINO' | 'EN_BALANZA' | 'ENTREGADO' | 'CANCELADO';
 
-export interface Viaje {
-  id: string;
+export interface Viaje extends BaseEntity {
   pedidoId: string;
   vehiculoId: string;
   conductorId: string;

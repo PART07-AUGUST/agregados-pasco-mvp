@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { Vehiculo } from '../types';
+import { getJoinedNombre } from '../utils/supabaseRelations';
 
 interface VehiculoRow {
   id: string;
@@ -21,16 +22,6 @@ export interface VehiculoConConductor extends Vehiculo {
 }
 
 function mapVehiculoRow(vehicle: VehiculoRow): VehiculoConConductor {
-  const getJoinedNombre = (
-    relation: { nombre: string | null } | Array<{ nombre: string | null }> | null | undefined
-  ): string => {
-    if (!relation) return '';
-    if (Array.isArray(relation)) {
-      return relation[0]?.nombre || '';
-    }
-    return relation.nombre || '';
-  };
-
   return {
     id: vehicle.id,
     placa: vehicle.placa,

@@ -1,13 +1,13 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { 
-  ClipboardList, 
-  Save, 
-  AlertCircle, 
-  Users, 
-  X, 
-  CheckCircle2, 
-  MessageSquare, 
-  Copy, 
+import {
+  ClipboardList,
+  Save,
+  AlertCircle,
+  Users,
+  X,
+  CheckCircle2,
+  MessageSquare,
+  Copy,
   ExternalLink,
   MapPin,
   Sparkles,
@@ -60,7 +60,7 @@ export function OrderForm({
 }: OrderFormProps) {
   const { user } = useAuthStore();
   const [clienteId, setClienteId] = useState('');
-  
+
   // Soporte para Múltiples Materiales en una sola orden / obra
   const [items, setItems] = useState<OrderMaterialItem[]>(() => {
     if (initialItems && initialItems.length > 0) {
@@ -78,7 +78,7 @@ export function OrderForm({
   const [clientes, setClientes] = useState<ClienteOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Estados para el flujo de éxito y pago del cliente
   const [createdOrder, setCreatedOrder] = useState<Pedido | null>(null);
   const [copied, setCopied] = useState(false);
@@ -231,7 +231,7 @@ export function OrderForm({
               <span className="font-bold text-amber-400 uppercase tracking-wider text-[11px]">Instrucciones de Pago</span>
               <span className="text-[10px] text-slate-500 font-mono">Cta. Ahorros Soles</span>
             </div>
-            
+
             <div className="space-y-1">
               <span className="text-[10px] text-slate-400">Banco Interbank:</span>
               <div className="flex items-center justify-between bg-slate-900 p-2 rounded-xl border border-slate-800">
@@ -252,7 +252,7 @@ export function OrderForm({
             </div>
 
             <div className="text-[10px] text-slate-400">
-              Titular: <strong className="text-slate-200">Paolo Valentino Ramirez Alanya</strong>
+              Titular: <strong className="text-slate-200">SIS-AGREGADOS</strong>
             </div>
 
             <p className="text-[10px] text-slate-500 italic">
@@ -288,7 +288,7 @@ export function OrderForm({
   return (
     <>
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative">
-        <button 
+        <button
           type="button"
           onClick={onCancel}
           aria-label="Cerrar formulario de pedido"
@@ -317,7 +317,7 @@ export function OrderForm({
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-            
+
             {/* Asignar Cliente (Solo visible si es Admin) */}
             {isAdmin ? (
               <div className="space-y-1">
@@ -325,7 +325,7 @@ export function OrderForm({
                   <span>Empresa / Constructora Cliente *</span>
                   <span className="text-[10px] text-slate-500 flex items-center gap-0.5"><Users className="h-3 w-3" /> Solo rol Cliente</span>
                 </label>
-                <select 
+                <select
                   id="cliente-select"
                   aria-label="Empresa o constructora cliente"
                   value={clienteId}
@@ -378,7 +378,7 @@ export function OrderForm({
 
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
                       <div className="sm:col-span-8">
-                        <select 
+                        <select
                           aria-label={`Tipo de material ítem ${index + 1}`}
                           value={item.material}
                           onChange={(e) => handleItemChange(item.id, 'material', e.target.value as Pedido['material'])}
@@ -391,8 +391,8 @@ export function OrderForm({
                       </div>
 
                       <div className="sm:col-span-4 relative">
-                        <input 
-                          type="number" 
+                        <input
+                          type="number"
                           step="0.5"
                           min="1"
                           aria-label={`Volumen en m3 ítem ${index + 1}`}
@@ -423,10 +423,10 @@ export function OrderForm({
             <div className="space-y-1">
               <label htmlFor="destino-obra-input" className="font-semibold text-slate-400">Destino de Entrega (Obra / Dirección) *</label>
               <div className="flex gap-2">
-                <input 
+                <input
                   id="destino-obra-input"
                   aria-label="Destino de entrega en obra"
-                  type="text" 
+                  type="text"
                   value={destino}
                   onChange={(e) => {
                     setDestino(e.target.value);
@@ -478,15 +478,15 @@ export function OrderForm({
 
             {/* Botones de acción */}
             <div className="flex gap-3 pt-2">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={onCancel}
                 className="flex-1 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 font-semibold hover:bg-slate-900 active:scale-95 transition-all cursor-pointer"
               >
                 Cancelar
               </button>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={loading}
                 className="flex-1 py-2.5 rounded-xl bg-amber-500 text-amber-950 font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/10 cursor-pointer flex items-center justify-center gap-1"
               >

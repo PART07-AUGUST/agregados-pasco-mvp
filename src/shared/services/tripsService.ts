@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import type { Viaje } from '../types';
 import { offlineDb } from './offlineDb';
+import { getSingleRelation, getJoinedNombre } from '../utils/supabaseRelations';
 
 interface TripOrderRow {
   material: string | null;
@@ -46,23 +47,26 @@ export interface ViajeDetallado extends Viaje {
   conductorNombre?: string;
 }
 
+export interface VehiculoDespachoOption {
+  id: string;
+  placa: string;
+  marca: string;
+  modelo: string;
+  capacidadM3: number;
+}
+
+export interface ConductorDespachoOption {
+  id: string;
+  nombre: string;
+  dni: string;
+}
+
+export interface DispatchResources {
+  vehiculos: VehiculoDespachoOption[];
+  conductores: ConductorDespachoOption[];
+}
+
 function mapTripRow(t: TripRow): ViajeDetallado {
-  const getSingleRelation = <T>(val: T | T[] | null | undefined): T | undefined => {
-    if (!val) return undefined;
-    if (Array.isArray(val)) return val[0];
-    return val;
-  };
-
-  const getJoinedNombre = (
-    relation: { nombre: string | null } | Array<{ nombre: string | null }> | null | undefined
-  ): string => {
-    if (!relation) return '';
-    if (Array.isArray(relation)) {
-      return relation[0]?.nombre || '';
-    }
-    return relation.nombre || '';
-  };
-
   const pedido = getSingleRelation(t.pedidos);
   const vehiculo = getSingleRelation(t.vehiculos);
   const conductor = getSingleRelation(t.usuarios);
@@ -140,6 +144,45 @@ export const tripsService = {
     }
 
     return data as string;
+  },
+
+  async getAvailableDispatchResources(): Promise<DispatchResources> {
+    const [{ data: vData, error: vErr }, { data: cData, error: cErr }, { data: activeTrips, error: activeErr }] =
+      await Promise.all([
+        supabase.from('vehiculos').select('id, placa, marca, modelo, capacidad_m3').eq('activo', true).order('placa', { ascending: true }),
+        supabase.from('usuarios').select('id, nombre, dni').eq('rol', 'CONDUCTOR').order('nombre', { ascending: true }),
+        supabase.from('viajes').select('vehiculo_id, conductor_id').in('estado', ['PENDIENTE', 'EN_CAMINO', 'EN_BALANZA']),
+      ]);
+
+    if (vErr) throw vErr;
+    if (cErr) throw cErr;
+    if (activeErr) throw activeErr;
+
+    interface ActiveTripRow {
+      vehiculo_id: string;
+      conductor_id: string;
+    }
+
+    const activeVehicleIds = new Set((activeTrips as ActiveTripRow[] | null)?.map((trip) => trip.vehiculo_id) ?? []);
+    const activeDriverIds = new Set((activeTrips as ActiveTripRow[] | null)?.map((trip) => trip.conductor_id) ?? []);
+
+    const vehiculos: VehiculoDespachoOption[] = (
+      (vData as Array<{ id: string; placa: string; marca: string; modelo: string; capacidad_m3: number | string }> | null) ?? []
+    )
+      .filter((vehicle) => !activeVehicleIds.has(vehicle.id))
+      .map((vehicle) => ({
+        id: vehicle.id,
+        placa: vehicle.placa,
+        marca: vehicle.marca,
+        modelo: vehicle.modelo,
+        capacidadM3: Number(vehicle.capacidad_m3),
+      }));
+
+    const conductores: ConductorDespachoOption[] = (
+      (cData as ConductorDespachoOption[] | null) ?? []
+    ).filter((driver) => !activeDriverIds.has(driver.id));
+
+    return { vehiculos, conductores };
   },
 
   async getDriverActiveTrip(conductorId: string): Promise<ViajeDetallado | null> {

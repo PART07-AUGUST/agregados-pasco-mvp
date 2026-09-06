@@ -1,21 +1,20 @@
 import { supabase } from './supabase';
 
+function buildUniqueStoragePath(originalName: string): string {
+  const fileExt = originalName.split('.').pop() || 'jpg';
+  const randomSuffix = Math.random().toString(36).substring(2, 7);
+  return `tickets/ticket_${Date.now()}_${randomSuffix}.${fileExt}`;
+}
+
 export const storageService = {
-  /**
-   * Sube una imagen de ticket de balanza al bucket de Supabase Storage.
-   * Retorna la URL pública de lectura directa del archivo.
-   */
   async uploadTicketImage(file: File): Promise<string> {
-    const fileExt = file.name.split('.').pop() || 'jpg';
-    // Generar un nombre único para evitar cualquier colisión de archivos
-    const fileName = `ticket_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-    const filePath = `tickets/${fileName}`;
+    const filePath = buildUniqueStoragePath(file.name);
 
     const { error: uploadError } = await supabase.storage
       .from('tickets-balanza')
       .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: false
+        upsert: false,
       });
 
     if (uploadError) {
@@ -23,15 +22,14 @@ export const storageService = {
       throw new Error(`Error de almacenamiento: ${uploadError.message}`);
     }
 
-    // Obtener la URL pública del archivo subido
     const { data } = supabase.storage
       .from('tickets-balanza')
       .getPublicUrl(filePath);
 
-    if (!data || !data.publicUrl) {
+    if (!data?.publicUrl) {
       throw new Error('No se pudo obtener la URL pública del archivo subido.');
     }
 
     return data.publicUrl;
-  }
+  },
 };
