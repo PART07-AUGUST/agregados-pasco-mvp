@@ -1,6 +1,6 @@
 # 🚛 SIS-AGREGADOS — Sistema Integral de Control Logístico y Flotas
 
-> **Plataforma web de última generación para la gestión, transporte y despacho de agregados de cantera (arena fina, arena gruesa, piedra chancada y afirmado), diseñada para operaciones de alta montaña en Cerro de Pasco, Perú (4,380 m s.n.m.).**
+> **Plataforma web de última generación para la gestión, transporte y despacho de agregados de cantera (arena fina, arena gruesa, piedra chancada y afirmado), diseñada para operaciones de alta montaña en Cerro de Pasco, Perú .**
 
 Este sistema interconecta en tiempo real a **Administradores de Flota**, **Conductores de Volquetes** y **Empresas Constructoras**, garantizando trazabilidad de pesajes en balanza, cálculo geoespacial de fletes con perfiles de altitud, reconocimiento inteligente de rutas y continuidad operativa bajo condiciones extremas y baja cobertura celular mediante una arquitectura **Offline-First** y **Clean Architecture**.
 
