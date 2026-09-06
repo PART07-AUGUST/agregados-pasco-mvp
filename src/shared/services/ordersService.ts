@@ -1,7 +1,8 @@
 import { supabase } from './supabase';
+import { getSingleRelation, getJoinedNombre } from '../utils/supabaseRelations';
+import type { BaseEntity } from '../types';
 
-export interface Pedido {
-  id: string;
+export interface Pedido extends BaseEntity {
   clienteId: string;
   material: 'ARENA_FINA' | 'ARENA_GRUESA' | 'PIEDRA_1_2' | 'PIEDRA_3_4' | 'AFIRMADO' | 'TIERRA_CHACRA';
   volumenM3: number;
@@ -52,22 +53,6 @@ interface PedidoRow {
 }
 
 function mapPedidoRow(pedido: PedidoRow): Pedido {
-  const getJoinedNombre = (
-    relation: { nombre: string | null } | Array<{ nombre: string | null }> | null | undefined
-  ): string => {
-    if (!relation) return '';
-    if (Array.isArray(relation)) {
-      return relation[0]?.nombre || '';
-    }
-    return relation.nombre || '';
-  };
-
-  const getSingleRelation = <T>(val: T | T[] | null | undefined): T | undefined => {
-    if (!val) return undefined;
-    if (Array.isArray(val)) return val[0];
-    return val;
-  };
-
   const viaje = pedido.viajes && pedido.viajes.length > 0 ? pedido.viajes[0] : undefined;
   const vehiculo = viaje ? getSingleRelation(viaje.vehiculos) : undefined;
   const conductor = viaje ? getSingleRelation(viaje.usuarios) : undefined;

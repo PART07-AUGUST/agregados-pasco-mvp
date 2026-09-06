@@ -1,7 +1,7 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { Truck, Users, Save, AlertCircle, X, Sparkles, RotateCcw } from 'lucide-react';
 import { vehiclesService } from '../../../shared/services/vehiclesService';
-import { supabase } from '../../../shared/services/supabase';
+import { driversService } from '../../../shared/services/driversService';
 import { validarPlaca } from '../../../shared/validations';
 import type { Vehiculo } from '../../../shared/types';
 import { getErrorMessage } from '../../../shared/utils/errors';
@@ -26,7 +26,6 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
   const [conductorId, setConductorId] = useState(editingVehicle?.conductorId || '');
   const [activo, setActivo] = useState(editingVehicle?.activo !== undefined ? editingVehicle.activo : true);
 
-  // Determinar si la marca inicial proviene del catálogo o es personalizada
   const brandInCatalog = CATALOGO_VEHICULOS_PESADOS.some(
     (b) => b.marca.toLowerCase() === (editingVehicle?.marca || '').toLowerCase()
   );
@@ -40,19 +39,13 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
   useEffect(() => {
     async function loadConductores() {
       try {
-        const { data, error: err } = await supabase
-          .from('usuarios')
-          .select('id, nombre')
-          .eq('rol', 'CONDUCTOR')
-          .order('nombre', { ascending: true });
-
-        if (err) throw err;
-        setConductores(data || []);
-      } catch (error: unknown) {
-        console.error('Error al cargar conductores para selección:', error);
+        const data = await driversService.getConductorOptions();
+        setConductores(data);
+      } catch (err: unknown) {
+        console.error('Error al cargar conductores para selección:', err);
       }
     }
-    loadConductores();
+    void loadConductores();
   }, []);
 
   // Obtener la marca actual en el catálogo
@@ -167,8 +160,11 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
             
             {/* Placa */}
             <div className="space-y-1">
-              <label className="font-semibold text-slate-400">Placa Vehicular *</label>
+              <label htmlFor="vehiculo-placa" className="font-semibold text-slate-400">
+                Placa Vehicular *
+              </label>
               <input 
+                id="vehiculo-placa"
                 type="text" 
                 value={placa}
                 onChange={(e) => {
@@ -184,7 +180,9 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
             {/* Capacidad */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="font-semibold text-slate-400">Capacidad Tolva (m³) *</label>
+                <label htmlFor="vehiculo-capacidad" className="font-semibold text-slate-400">
+                  Capacidad Tolva (m³) *
+                </label>
                 {marcaSeleccionada && modelo && (
                   <span className="text-[10px] text-amber-400 font-medium flex items-center gap-1">
                     <Sparkles className="h-2.5 w-2.5" /> Sugerida
@@ -192,6 +190,7 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
                 )}
               </div>
               <input 
+                id="vehiculo-capacidad"
                 type="number" 
                 step="0.5"
                 min="1"
@@ -211,7 +210,9 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
             {/* Marca */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="font-semibold text-slate-400">Marca de Camión *</label>
+                <label htmlFor="vehiculo-marca" className="font-semibold text-slate-400">
+                  Marca de Camión *
+                </label>
                 {isCustomMarca ? (
                   <button
                     type="button"
@@ -239,6 +240,7 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
 
               {isCustomMarca ? (
                 <input 
+                  id="vehiculo-marca"
                   type="text" 
                   value={marca}
                   onChange={(e) => {
@@ -250,6 +252,7 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
                 />
               ) : (
                 <select
+                  id="vehiculo-marca"
                   value={marca}
                   onChange={(e) => handleMarcaChange(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2.5 outline-none text-white text-xs cursor-pointer"
@@ -268,7 +271,9 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
             {/* Modelo */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="font-semibold text-slate-400">Modelo *</label>
+                <label htmlFor="vehiculo-modelo" className="font-semibold text-slate-400">
+                  Modelo *
+                </label>
                 {marcaSeleccionada && (
                   isCustomModelo ? (
                     <button
@@ -292,6 +297,7 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
 
               {!isCustomMarca && marcaSeleccionada && !isCustomModelo ? (
                 <select
+                  id="vehiculo-modelo"
                   value={modelo}
                   onChange={(e) => handleModeloSelect(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2.5 outline-none text-white text-xs cursor-pointer"
@@ -306,6 +312,7 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
                 </select>
               ) : (
                 <input 
+                  id="vehiculo-modelo"
                   type="text" 
                   value={modelo}
                   onChange={(e) => {
@@ -321,11 +328,12 @@ export function VehicleForm({ onSuccess, onCancel, editingVehicle }: VehicleForm
 
           {/* Conductor Asignado */}
           <div className="space-y-1">
-            <label className="font-semibold text-slate-400 flex justify-between">
+            <label htmlFor="vehiculo-conductor" className="font-semibold text-slate-400 flex justify-between">
               <span>Asignar Conductor (Opcional)</span>
               <span className="text-[10px] text-slate-500 flex items-center gap-0.5"><Users className="h-3 w-3" /> Solo rol Conductor</span>
             </label>
             <select 
+              id="vehiculo-conductor"
               value={conductorId}
               onChange={(e) => setConductorId(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-3 py-2.5 outline-none text-white text-xs cursor-pointer"

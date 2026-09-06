@@ -219,4 +219,18 @@ export const driversService = {
 
     if (error) throw error;
   },
+
+  /**
+   * Obtiene una lista ligera de conductores para selectores de asignación en formularios.
+   */
+  async getConductorOptions(): Promise<Array<{ id: string; nombre: string }>> {
+    const { data, error } = await supabase
+      .from('usuarios')
+      .select('id, nombre')
+      .eq('rol', 'CONDUCTOR')
+      .order('nombre', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  },
 };
