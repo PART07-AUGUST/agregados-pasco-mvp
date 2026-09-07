@@ -189,8 +189,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       return loggedUser;
     } catch (error: unknown) {
       console.error('Error en login:', error);
+      let errorMsg = getErrorMessage(error, 'Credenciales incorrectas');
+      if (errorMsg === 'Invalid login credentials') {
+        errorMsg = 'Correo o contraseña incorrectos. Si te acabas de registrar, por favor revisa tu bandeja de entrada (o Spam) y confirma tu correo electrónico.';
+      }
       set({
-        error: getErrorMessage(error, 'Credenciales incorrectas'),
+        error: errorMsg,
         loading: false,
       });
       return null;

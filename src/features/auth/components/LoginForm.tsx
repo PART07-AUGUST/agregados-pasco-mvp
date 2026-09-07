@@ -46,10 +46,10 @@ export function LoginForm() {
 
   return (
     <div className="w-full max-w-md bg-slate-900/40 border border-slate-900 rounded-3xl p-8 backdrop-blur-xl relative overflow-hidden">
-      
+
       {/* Círculo luminoso de fondo */}
       <div className="absolute top-0 right-0 -mt-10 -mr-10 w-44 h-44 bg-amber-500/5 rounded-full blur-2xl pointer-events-none"></div>
-      
+
       <div className="space-y-6">
         {/* Encabezado del Formulario */}
         <div className="text-center space-y-2">
@@ -66,7 +66,7 @@ export function LoginForm() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          
+
           {/* Campo: Correo */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-400">Correo Electrónico</label>
@@ -74,8 +74,8 @@ export function LoginForm() {
               <span className="absolute left-3.5 top-3.5 text-slate-500">
                 <Mail className="h-4 w-4" />
               </span>
-              <input 
-                type="email" 
+              <input
+                type="email"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -95,8 +95,8 @@ export function LoginForm() {
               <span className="absolute left-3.5 top-3.5 text-slate-500">
                 <Lock className="h-4 w-4" />
               </span>
-              <input 
-                type="password" 
+              <input
+                type="password"
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
@@ -110,14 +110,13 @@ export function LoginForm() {
           </div>
 
           {/* Botón de Envío */}
-          <button 
+          <button
             type="submit"
             disabled={loginStore.loading}
-            className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer ${
-              loginStore.loading
+            className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer ${loginStore.loading
                 ? 'bg-amber-600/50 cursor-not-allowed text-slate-800'
                 : 'bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-lg shadow-amber-500/10'
-            }`}
+              }`}
           >
             {loginStore.loading ? (
               <>
@@ -137,7 +136,7 @@ export function LoginForm() {
               to="/register"
               className="text-slate-400 hover:text-amber-500 font-semibold transition-colors"
             >
-              ¿No tienes cuenta? Registra tu constructora aquí
+              ¿No tienes cuenta? Registrate aquí
             </Link>
           </div>
         </form>
