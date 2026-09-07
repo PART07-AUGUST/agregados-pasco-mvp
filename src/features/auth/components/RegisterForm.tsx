@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  User, 
-  Mail, 
-  Lock, 
-  ArrowRight, 
-  Loader2, 
-  AlertCircle, 
+import {
+  User,
+  Mail,
+  Lock,
+  ArrowRight,
+  Loader2,
+  AlertCircle,
   ShieldCheck,
   Phone,
   CreditCard,
@@ -31,8 +31,6 @@ export function RegisterForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
-  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -104,15 +102,10 @@ export function RegisterForm() {
       }
 
       setSuccess(true);
-      
-      // Si Supabase no devuelve sesión activa, requiere confirmación de email
-      if (!data.session) {
-        setNeedsConfirmation(true);
-      } else {
-        setTimeout(() => {
-          navigate('/cliente', { replace: true });
-        }, 2000);
-      }
+
+      setTimeout(() => {
+        navigate('/login', { replace: true });
+      }, 1500);
 
     } catch (err: unknown) {
       console.error('Error al registrar usuario:', err);
@@ -124,40 +117,6 @@ export function RegisterForm() {
   };
 
   if (success) {
-    if (needsConfirmation) {
-      return (
-        <div className="w-full max-w-lg bg-slate-900/40 border border-slate-800 rounded-3xl p-8 backdrop-blur-xl text-center space-y-6 animate-in fade-in zoom-in-95 duration-300">
-          <div className="mx-auto w-16 h-16 bg-amber-500/10 border border-amber-500/35 rounded-full flex items-center justify-center text-amber-400 shadow-lg shadow-amber-500/10">
-            <Mail className="h-8 w-8 animate-pulse" />
-          </div>
-          <div className="space-y-3">
-            <h2 className="text-xl font-bold text-white">¡Confirma tu Correo!</h2>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Hemos enviado un correo de verificación a <strong className="text-amber-400 font-semibold">{email}</strong>.
-            </p>
-            <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl text-left text-xs text-slate-400 space-y-1.5">
-              <p className="font-semibold text-slate-300">Pasos para ingresar:</p>
-              <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-400">
-                <li>Abre tu bandeja de entrada en <span className="text-amber-400">{email}</span>.</li>
-                <li>Busca el correo de Supabase (revisa también tu carpeta de <em>Spam</em> o <em>No deseados</em>).</li>
-                <li>Haz clic en <strong>Confirm your email</strong>.</li>
-                <li>Regresa al portal e inicia sesión con tu contraseña.</li>
-              </ol>
-            </div>
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => navigate('/login')}
-                className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition-colors cursor-pointer"
-              >
-                Ir a Iniciar Sesión
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
     return (
       <div className="w-full max-w-lg bg-slate-900/40 border border-slate-800 rounded-3xl p-8 backdrop-blur-xl text-center space-y-6 animate-in fade-in zoom-in-95 duration-300">
         <div className="mx-auto w-16 h-16 bg-emerald-500/10 border border-emerald-500/35 rounded-full flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10">
@@ -194,7 +153,7 @@ export function RegisterForm() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          
+
           {/* Nombres y Apellidos */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div className="space-y-1.5">
@@ -203,8 +162,8 @@ export function RegisterForm() {
                 <span className="absolute left-3.5 top-3.5 text-slate-500">
                   <User className="h-4 w-4" />
                 </span>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={nombres}
                   onChange={(e) => setNombres(e.target.value)}
                   disabled={loading}
@@ -221,8 +180,8 @@ export function RegisterForm() {
                 <span className="absolute left-3.5 top-3.5 text-slate-500">
                   <User className="h-4 w-4" />
                 </span>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={apellidos}
                   onChange={(e) => setApellidos(e.target.value)}
                   disabled={loading}
@@ -245,8 +204,8 @@ export function RegisterForm() {
                 <span className="absolute left-3.5 top-3.5 text-slate-500">
                   <CreditCard className="h-4 w-4" />
                 </span>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   maxLength={8}
                   value={dni}
                   onChange={(e) => setDni(e.target.value.replace(/\D/g, ''))}
@@ -267,8 +226,8 @@ export function RegisterForm() {
                 <span className="absolute left-3.5 top-3.5 text-slate-500">
                   <Phone className="h-4 w-4" />
                 </span>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   maxLength={9}
                   value={celular}
                   onChange={(e) => setCelular(e.target.value.replace(/\D/g, ''))}
@@ -288,8 +247,8 @@ export function RegisterForm() {
               <span className="absolute left-3.5 top-3.5 text-slate-500">
                 <Mail className="h-4 w-4" />
               </span>
-              <input 
-                type="email" 
+              <input
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
@@ -308,8 +267,8 @@ export function RegisterForm() {
                 <span className="absolute left-3.5 top-3.5 text-slate-500">
                   <Lock className="h-4 w-4" />
                 </span>
-                <input 
-                  type={showPassword ? 'text' : 'password'} 
+                <input
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
@@ -334,8 +293,8 @@ export function RegisterForm() {
                 <span className="absolute left-3.5 top-3.5 text-slate-500">
                   <Lock className="h-4 w-4" />
                 </span>
-                <input 
-                  type={showPassword ? 'text' : 'password'} 
+                <input
+                  type={showPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={loading}
@@ -347,14 +306,13 @@ export function RegisterForm() {
             </div>
           </div>
 
-          <button 
+          <button
             type="submit"
             disabled={loading}
-            className={`w-full py-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer mt-5 ${
-              loading
-                ? 'bg-amber-600/50 cursor-not-allowed text-slate-800'
-                : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20'
-            }`}
+            className={`w-full py-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer mt-5 ${loading
+              ? 'bg-amber-600/50 cursor-not-allowed text-slate-800'
+              : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20'
+              }`}
           >
             {loading ? (
               <>

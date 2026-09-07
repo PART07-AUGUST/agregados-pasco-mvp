@@ -268,6 +268,107 @@ pnpm run build
 
 ---
 
+## 🌐 Guía de Despliegue en Producción
+
+Sigue esta guía paso a paso para poner en marcha la plataforma en un entorno de producción de alta disponibilidad utilizando **Supabase** (Backend/DB/Storage) y **Vercel** (Frontend/Hosting Edge).
+
+```mermaid
+flowchart LR
+    A[Código en GitHub] -->|Git Push| B(Vercel Edge Network)
+    B -->|Build: pnpm run build| C[App Web en Producción]
+    C <-->|PostgreSQL / RLS / Auth| D[(Supabase Cloud)]
+    C <-->|Georutas y Altitud| E[GraphHopper API]
+    C <-->|Mapas Satelitales| F[Google Maps API]
+```
+
+---
+
+### Paso 1: Configurar la Base de Datos y Seguridad en Supabase
+
+1. **Crear Proyecto**:
+   - Ingresa a [Supabase Dashboard](https://supabase.com/dashboard) y crea un nuevo proyecto (ej. `agregados-pasco-prod`).
+   - Elige la región más cercana (ej. `South America (São Paulo)`).
+
+2. **Ejecutar Migraciones SQL**:
+   - Dirígete a la sección **SQL Editor** en la barra lateral.
+   - Ejecuta en orden secuencial los scripts contenidos en `supabase/migrations/`:
+     1. `20260527_seed_users_storage_and_trip_guards.sql` (esquema inicial, tablas de viajes, pesajes y catálogo de vehículos).
+     2. `20260905_admin_create_driver_rpc.sql` (procedimiento almacenado `admin_crear_conductor` con `SECURITY DEFINER`).
+     3. `20260906_security_hardening.sql` (blindaje de roles, inmutabilidad de perfiles, cambio forzado de contraseña y RLS).
+
+3. **Configurar Almacenamiento (Supabase Storage)**:
+   - Ve a **Storage** en la barra lateral.
+   - Verifica que el bucket `tickets-balanza` exista y esté marcado como **Public bucket** (las políticas RLS aplicadas por las migraciones restringen la subida exclusivamente a choferes y administradores autorizados).
+
+4. **Configurar Autenticación (Auth)**:
+   - Ve a **Authentication** > **URL Configuration**:
+     - **Site URL**: `https://tu-proyecto.vercel.app` (o tu dominio personalizado).
+     - **Redirect URLs**: Añadir las URLs autorizadas para redirección:
+       ```txt
+       https://tu-proyecto.vercel.app/**
+       http://localhost:5173/**
+       ```
+   - **Confirmación de Correo**:
+     - En **Authentication** > **Providers** > **Email**:
+       - Si deseas que los usuarios verifiquen su bandeja de entrada antes de ingresar, mantén **Confirm email** activado.
+       - Si prefieres acceso inmediato tras el registro (común en fases de prueba y MVP), desmarca **Confirm email**.
+
+---
+
+### Paso 2: Despliegue del Frontend en Vercel
+
+El proyecto incluye un archivo [`vercel.json`](file:///c:/Users/paolo/Desktop/Agregados/vercel.json) preconfigurado con las reglas de rewrite necesarias para que el enrutamiento SPA (React Router) funcione sin arrojar errores `404 Not Found` al refrescar rutas como `/login`, `/admin` o `/cliente`.
+
+#### Opción A: Despliegue Continuo con GitHub (Recomendado)
+1. Sube tu repositorio a GitHub.
+2. Ingresa a [Vercel Dashboard](https://vercel.com/dashboard) y haz clic en **"Add New Project"**.
+3. Importa el repositorio `agregados-pasco-mvp`.
+4. En **Project Settings**, confirma los siguientes parámetros:
+   - **Framework Preset**: `Vite`
+   - **Build Command**: `pnpm run build`
+   - **Output Directory**: `dist`
+   - **Install Command**: `pnpm install`
+
+#### Opción B: Despliegue mediante Vercel CLI
+```bash
+# Instalar CLI si no la tienes
+pnpm dlx vercel login
+
+# Vincular y desplegar a producción
+pnpm dlx vercel --prod
+```
+
+---
+
+### Paso 3: Configuración de Variables de Entorno en Producción
+
+En el panel de tu proyecto en Vercel, navega a **Settings** > **Environment Variables** y añade las siguientes claves obligatorias:
+
+| Variable | Descripción | Ejemplo / Fuente |
+| :--- | :--- | :--- |
+| `VITE_SUPABASE_URL` | URL de tu API REST de Supabase | `https://xxxx.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | Clave pública anónima de Supabase | `eyJhbGciOi...` |
+| `VITE_GOOGLE_MAPS_API_KEY` | API Key de Google Maps Platform con Maps JS API | `AIzaSy...` |
+| `VITE_GRAPHHOPPER_API_KEY` | Clave de API de GraphHopper para enrutamiento vial | `7cc2e017-xxxx-xxxx...` |
+
+> [!IMPORTANT]
+> Tras registrar o actualizar variables de entorno en Vercel, es indispensable realizar un nuevo despliegue (**Redeploy**) para que los valores se inyecten durante la fase de compilación del bundle de Vite.
+
+---
+
+### Paso 4: Pruebas de Humo Post-Despliegue (Smoke Testing)
+
+Una vez completado el despliegue, realiza la siguiente lista de verificación:
+
+- [ ] **Acceso y Renderizado**: Carga la URL de producción y verifica que la landing page cargue correctamente con el diseño temático de alta montaña.
+- [ ] **SPA Routing**: Accede directamente por URL a `https://tu-dominio.vercel.app/login` y `https://tu-dominio.vercel.app/register` comprobando que no devuelvan error 404.
+- [ ] **Simulador de Fletes**: Selecciona una cantera y un destino; verifica que Google Maps trace la ruta y GraphHopper calcule la distancia y altimetría.
+- [ ] **Registro e Inicio de Sesión**: Crea un nuevo cliente y valida el ingreso correcto al portal de cliente.
+- [ ] **Consola de Control**: Inicia sesión con credenciales de Administrador y verifica la carga de vehículos, choferes y despachos.
+
+---
+
 ## 📜 Licencia
 
 Desarrollado como plataforma integral para la modernización de la cadena de suministro y transporte de áridos en la región Pasco. Todos los derechos reservados.
+
