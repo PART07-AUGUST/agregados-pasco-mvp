@@ -366,9 +366,3 @@ Una vez completado el despliegue, realiza la siguiente lista de verificación:
 - [ ] **Registro e Inicio de Sesión**: Crea un nuevo cliente y valida el ingreso correcto al portal de cliente.
 - [ ] **Consola de Control**: Inicia sesión con credenciales de Administrador y verifica la carga de vehículos, choferes y despachos.
 
----
-
-## 📜 Licencia
-
-Desarrollado como plataforma integral para la modernización de la cadena de suministro y transporte de áridos en la región Pasco. Todos los derechos reservados.
-

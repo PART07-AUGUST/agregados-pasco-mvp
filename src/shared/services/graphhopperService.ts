@@ -35,7 +35,6 @@ const memoryCache = new Map<string, GraphHopperRouteResult>();
 
 /**
  * Servicio cliente para interactuar con la API de GraphHopper Routing.
- * Implementa patrón Adapter con caché en memoria y resiliencia para transporte pesado en Pasco.
  */
 export const graphhopperService = {
   /**
@@ -115,10 +114,9 @@ export const graphhopperService = {
     const path = data.paths[0];
     const distanceKm = Number((path.distance / 1000).toFixed(1));
 
-    // Duración: En altitud andina (Cerro de Pasco 4380m) los volquetes pesados cargados
     // suelen promediar entre 30 y 40 km/h en pendientes
     const durationMinutes = Math.max(
-      Math.round((path.time / 1000 / 60) * 1.15), // Ajuste por curvas de montaña
+      Math.round((path.time / 1000 / 60) * 1.15),
       Math.round((distanceKm / 35) * 60) + 10
     );
 
@@ -144,7 +142,6 @@ export const graphhopperService = {
   },
 
   /**
-   * Fallback de emergencia cuando no hay conectividad o se excede la cuota.
    * Utiliza el cálculo de distancia ortodrómica (Haversine) con factor de tortuosidad vial de montaña (1.35x).
    */
   getFallbackRoute(
