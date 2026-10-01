@@ -14,19 +14,31 @@ interface DriversListProps {
   conductores: ConductorDetallado[];
   onEditDriver: (conductor: ConductorDetallado) => void;
   onToggleStatus: (conductor: ConductorDetallado) => void;
+  onAddDriver?: () => void;
 }
 
-export function DriversList({ conductores, onEditDriver, onToggleStatus }: DriversListProps) {
+export function DriversList({ conductores, onEditDriver, onToggleStatus, onAddDriver }: DriversListProps) {
   if (conductores.length === 0) {
     return (
-      <div className="bg-slate-900/30 border border-slate-900 rounded-3xl p-12 text-center space-y-3">
+      <div className="bg-slate-900/30 border border-slate-900 rounded-3xl p-12 text-center space-y-4">
         <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
           <User className="h-6 w-6" />
         </div>
-        <h3 className="text-base font-bold text-white">No hay conductores registrados</h3>
-        <p className="text-xs text-slate-500 max-w-sm mx-auto">
-          Comienza agregando conductores a la nómina logística para asignarles volquetes y programar despachos de material.
-        </p>
+        <div className="space-y-1">
+          <h3 className="text-base font-bold text-white">No hay conductores registrados</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            Comienza agregando conductores a la nómina logística para asignarles volquetes y programar despachos de material.
+          </p>
+        </div>
+        {onAddDriver && (
+          <button
+            type="button"
+            onClick={onAddDriver}
+            className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 active:scale-95 transition-colors shadow-md shadow-amber-500/10 cursor-pointer"
+          >
+            Registrar Primer Conductor
+          </button>
+        )}
       </div>
     );
   }
@@ -40,7 +52,7 @@ export function DriversList({ conductores, onEditDriver, onToggleStatus }: Drive
         return (
           <div 
             key={driver.id}
-            className={`rounded-2xl border transition-all relative overflow-hidden flex flex-col justify-between p-5 space-y-4 ${
+            className={`rounded-2xl border transition-colors relative overflow-hidden flex flex-col justify-between p-5 space-y-4 ${
               isInactive 
                 ? 'bg-slate-950/40 border-slate-900 opacity-60' 
                 : hasActiveTrip
@@ -48,7 +60,6 @@ export function DriversList({ conductores, onEditDriver, onToggleStatus }: Drive
                   : 'bg-slate-900/30 border-slate-800/80 hover:border-slate-700'
             }`}
           >
-            {/* Cabecera de la Tarjeta */}
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center space-x-3">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs font-mono shrink-0 ${
@@ -66,7 +77,6 @@ export function DriversList({ conductores, onEditDriver, onToggleStatus }: Drive
                 </div>
               </div>
 
-              {/* Badge de Estado Operativo */}
               <div>
                 {isInactive ? (
                   <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 text-[10px] font-bold tracking-wider uppercase">
@@ -86,9 +96,7 @@ export function DriversList({ conductores, onEditDriver, onToggleStatus }: Drive
               </div>
             </div>
 
-            {/* Datos Técnicos y Operativos */}
             <div className="space-y-2 text-xs border-y border-slate-850 py-3">
-              {/* DNI y Licencia */}
               <div className="grid grid-cols-2 gap-2 text-slate-400">
                 <div className="flex items-center space-x-1.5">
                   <CreditCard className="h-3.5 w-3.5 text-slate-500 shrink-0" />
@@ -102,7 +110,6 @@ export function DriversList({ conductores, onEditDriver, onToggleStatus }: Drive
                 </div>
               </div>
 
-              {/* Volquete Asignado */}
               <div className="flex items-center justify-between text-slate-400 pt-1">
                 <span className="flex items-center gap-1.5">
                   <Truck className="h-3.5 w-3.5 text-slate-500 shrink-0" />
@@ -117,7 +124,6 @@ export function DriversList({ conductores, onEditDriver, onToggleStatus }: Drive
                 )}
               </div>
 
-              {/* Viaje en curso si existe */}
               {driver.viajeActivo && (
                 <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] space-y-0.5">
                   <span className="text-amber-400 font-bold block">Destino actual:</span>
@@ -126,14 +132,13 @@ export function DriversList({ conductores, onEditDriver, onToggleStatus }: Drive
               )}
             </div>
 
-            {/* Acciones del Administrador */}
             <div className="flex items-center justify-between gap-2 pt-1">
               {driver.celular ? (
                 <a
                   href={`https://wa.me/51${driver.celular.replace(/\D/g, '')}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-emerald-400 hover:bg-slate-900 active:scale-95 transition-all text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-emerald-400 hover:bg-slate-900 active:scale-95 transition-colors text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                   title="Contactar vía WhatsApp"
                 >
                   <MessageSquare className="h-3.5 w-3.5" />
@@ -150,7 +155,7 @@ export function DriversList({ conductores, onEditDriver, onToggleStatus }: Drive
                   type="button"
                   onClick={() => onEditDriver(driver)}
                   aria-label={`Editar conductor ${driver.nombre}`}
-                  className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900 active:scale-95 transition-all cursor-pointer"
+                  className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900 active:scale-95 transition-colors cursor-pointer"
                   title="Editar información"
                 >
                   <Edit3 className="h-3.5 w-3.5" />
@@ -160,7 +165,7 @@ export function DriversList({ conductores, onEditDriver, onToggleStatus }: Drive
                   type="button"
                   onClick={() => onToggleStatus(driver)}
                   aria-label={isInactive ? `Activar conductor ${driver.nombre}` : `Desactivar conductor ${driver.nombre}`}
-                  className={`p-1.5 rounded-lg border active:scale-95 transition-all cursor-pointer ${
+                  className={`p-1.5 rounded-lg border active:scale-95 transition-colors cursor-pointer ${
                     isInactive
                       ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
                       : 'bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/20'
@@ -171,7 +176,6 @@ export function DriversList({ conductores, onEditDriver, onToggleStatus }: Drive
                 </button>
               </div>
             </div>
-
           </div>
         );
       })}
@@ -180,3 +184,4 @@ export function DriversList({ conductores, onEditDriver, onToggleStatus }: Drive
 }
 
 export default DriversList;
+

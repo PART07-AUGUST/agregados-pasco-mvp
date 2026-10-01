@@ -33,6 +33,11 @@ interface TripRow {
   ticket_balanza_url: string | null;
   fecha_asignacion: string;
   fecha_entrega: string | null;
+  distancia_km?: number | string | null;
+  desnivel_metros?: number | string | null;
+  cantera_origen?: string | null;
+  consumo_diesel_estimado?: number | string | null;
+  consumo_diesel_real?: number | string | null;
   pedidos?: TripOrderRow | TripOrderRow[] | null;
   vehiculos?: TripVehicleRow | TripVehicleRow[] | null;
   usuarios?: TripDriverRow | TripDriverRow[] | null;
@@ -82,6 +87,11 @@ function mapTripRow(t: TripRow): ViajeDetallado {
     ticketBalanzaUrl: t.ticket_balanza_url || undefined,
     fechaAsignacion: t.fecha_asignacion,
     fechaEntrega: t.fecha_entrega || undefined,
+    distanciaKm: t.distancia_km != null ? Number(t.distancia_km) : undefined,
+    desnivelMetros: t.desnivel_metros != null ? Number(t.desnivel_metros) : undefined,
+    canteraOrigen: t.cantera_origen ?? undefined,
+    consumoDieselEstimado: t.consumo_diesel_estimado != null ? Number(t.consumo_diesel_estimado) : undefined,
+    consumoDieselReal: t.consumo_diesel_real != null ? Number(t.consumo_diesel_real) : undefined,
     material: pedido?.material ?? undefined,
     volumenM3: pedido?.volumen_m3 ? Number(pedido.volumen_m3) : undefined,
     destino: pedido?.destino ?? undefined,
@@ -106,6 +116,11 @@ export const tripsService = {
         ticket_balanza_url,
         fecha_asignacion,
         fecha_entrega,
+        distancia_km,
+        desnivel_metros,
+        cantera_origen,
+        consumo_diesel_estimado,
+        consumo_diesel_real,
         pedidos:pedido_id (
           material,
           volumen_m3,
@@ -130,6 +145,7 @@ export const tripsService = {
 
     return (data as TripRow[] | null)?.map(mapTripRow) ?? [];
   },
+
 
   async assignTrip(pedidoId: string, vehiculoId: string, conductorId: string): Promise<string> {
     const { data, error } = await supabase.rpc('asignar_viaje', {

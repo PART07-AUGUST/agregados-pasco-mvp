@@ -4,6 +4,7 @@ import type { Pedido } from '../../../shared/services/ordersService';
 import { getErrorMessage } from '../../../shared/utils/errors';
 import { getMaterialLabel } from '../../../shared/constants/materials';
 import { OrderDispatchDetailsModal } from './OrderDispatchDetailsModal';
+import { Pagination } from '../../../shared/components/Pagination';
 
 interface OrdersListProps {
   orders: Pedido[];
@@ -12,8 +13,16 @@ interface OrdersListProps {
   isAdmin?: boolean;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = false }: OrdersListProps) {
   const [selectedDispatchOrder, setSelectedDispatchOrder] = useState<Pedido | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(orders.length / ITEMS_PER_PAGE) || 1;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, orders.length);
+  const currentOrders = orders.slice(startIndex, endIndex);
 
   const handleCancelClick = async (id: string) => {
     if (confirm('¿Estás seguro de que deseas cancelar este pedido? Esta acción no se puede deshacer.')) {
@@ -27,8 +36,6 @@ export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = fal
 
   return (
     <div className="bg-slate-900/30 border border-slate-900 rounded-3xl overflow-hidden backdrop-blur-md relative">
-      
-      {/* Cabecera del Listado */}
       <div className="p-5 border-b border-slate-900 flex justify-between items-center relative z-10">
         <div>
           <h4 className="text-sm font-bold text-white uppercase tracking-wider">Cartera de Pedidos Suministrados</h4>
@@ -63,30 +70,20 @@ export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = fal
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-900/60">
-              {orders.map((p) => (
+              {currentOrders.map((p) => (
                 <tr key={p.id} className="hover:bg-slate-900/10 transition-colors">
-                  
-                  {/* Constructora / Cliente */}
                   <td className="py-3.5 px-4 font-bold text-slate-200">
                     {p.clienteNombre}
                   </td>
-                  
-                  {/* Material */}
                   <td className="py-3.5 px-4">
                     <span className="font-semibold text-slate-300">{getMaterialLabel(p.material)}</span>
                   </td>
-                  
-                  {/* Volumen */}
                   <td className="py-3.5 px-4 font-mono font-bold text-amber-500">
                     {p.volumenM3} m³
                   </td>
-                  
-                  {/* Destino */}
                   <td className="py-3.5 px-4 text-slate-400 font-medium">
                     {p.destino}
                   </td>
-                  
-                  {/* Estado */}
                   <td className="py-3.5 px-4">
                     <span className={`px-2 py-0.5 rounded font-mono text-[9px] font-bold ${
                       p.estado === 'PENDIENTE' 
@@ -102,12 +99,8 @@ export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = fal
                       {p.estado}
                     </span>
                   </td>
-                  
-                  {/* Acciones */}
                   <td className="py-3.5 px-4 text-right">
                     <div className="flex items-center justify-end space-x-2">
-                      
-                      {/* Botón de Asignar (Solo visible para Admin si el pedido está PENDIENTE) */}
                       {isAdmin && p.estado === 'PENDIENTE' && (
                         <button 
                           type="button"
@@ -120,7 +113,6 @@ export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = fal
                         </button>
                       )}
                       
-                      {/* Botón de Cancelar (Visible si está PENDIENTE) */}
                       {p.estado === 'PENDIENTE' && (
                         <button 
                           type="button"
@@ -132,7 +124,6 @@ export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = fal
                         </button>
                       )}
 
-                      {/* Botón de Detalles del Despacho (Visible para pedidos despachados) */}
                       {p.estado !== 'PENDIENTE' && p.estado !== 'CANCELADO' && (p.vehiculoPlaca || p.conductorNombre) && (
                         <button 
                           type="button"
@@ -145,7 +136,6 @@ export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = fal
                       )}
                     </div>
                   </td>
-
                 </tr>
               ))}
             </tbody>
@@ -153,21 +143,31 @@ export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = fal
         </div>
       )}
 
-      {/* Footer del Listado */}
-      <div className="p-4 border-t border-slate-900 bg-slate-950/20 flex items-center justify-between text-[10px] text-slate-500 font-semibold uppercase tracking-wider relative z-10">
-        <span className="flex items-center gap-1.5"><ClipboardCheck className="h-3.5 w-3.5 text-amber-500" /> Registro General de Pedidos</span>
-        <span className="flex items-center gap-1"><Award className="h-3.5 w-3.5 text-amber-500" /> Control de Despachos</span>
+      <div className="p-4 border-t border-slate-900 bg-slate-950/20 flex flex-col gap-3 relative z-10">
+        <div className="flex items-center justify-between text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
+          <span className="flex items-center gap-1.5"><ClipboardCheck className="h-3.5 w-3.5 text-amber-500" /> Registro General de Pedidos</span>
+          <span className="flex items-center gap-1"><Award className="h-3.5 w-3.5 text-amber-500" /> Control de Despachos</span>
+        </div>
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalItems={orders.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          itemLabel="pedidos"
+        />
       </div>
 
-      {/* Modal de Información de Despacho */}
       {selectedDispatchOrder && (
         <OrderDispatchDetailsModal
           order={selectedDispatchOrder}
           onClose={() => setSelectedDispatchOrder(null)}
         />
       )}
-
     </div>
   );
 }
+
 export default OrdersList;
+

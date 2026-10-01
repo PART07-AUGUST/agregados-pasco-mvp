@@ -57,7 +57,13 @@ export interface Viaje extends BaseEntity {
   ticketBalanzaUrl?: string;
   fechaAsignacion: string;
   fechaEntrega?: string;
+  distanciaKm?: number;
+  desnivelMetros?: number;
+  canteraOrigen?: string;
+  consumoDieselEstimado?: number;
+  consumoDieselReal?: number;
 }
+
 
 export interface OfflineWeighingPayload {
   pesoEntrada: number;
