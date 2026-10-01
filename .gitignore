@@ -48,3 +48,8 @@ supabase/migrations/
 .agents/
 skills-lock.json
 .vercel
+
+# ML Model Artifacts
+*.joblib
+*.pkl
+*.onnx
