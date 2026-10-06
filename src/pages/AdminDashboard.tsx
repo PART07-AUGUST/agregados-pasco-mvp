@@ -15,6 +15,9 @@ import { useAdminDashboardData } from './useAdminDashboardData';
 import { FleetSection } from './admin/FleetSection';
 import { OrdersSection } from './admin/OrdersSection';
 import { AdminHeaderActions } from './admin/AdminHeaderActions';
+import { useAdminCopilot } from '../features/admin/hooks/useAdminCopilot';
+import { CopilotTriggerButton } from '../features/admin/components/CopilotTriggerButton';
+import { AdminCopilotModal } from '../features/admin/components/AdminCopilotModal';
 
 const DASHBOARD_TABS = [
   { id: 'monitoreo', label: 'Monitoreo de Despacho', icon: Activity },
@@ -61,6 +64,8 @@ export function AdminDashboard() {
     handleAssignClick,
     handleAssignSuccess,
   } = useAdminDashboardData();
+
+  const copilot = useAdminCopilot();
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
@@ -207,6 +212,27 @@ export function AdminDashboard() {
           onCancel={() => { setShowAssignModal(false); setSelectedOrder(null); }}
         />
       )}
+
+      <CopilotTriggerButton 
+        onClick={() => copilot.setIsOpen(true)}
+        remainingQuota={copilot.remainingQuota}
+        showQuota={copilot.showQuota}
+      />
+
+      <AdminCopilotModal 
+        isOpen={copilot.isOpen}
+        onClose={() => copilot.setIsOpen(false)}
+        messages={copilot.messages}
+        input={copilot.input}
+        setInput={copilot.setInput}
+        isGenerating={copilot.isGenerating}
+        error={copilot.error}
+        remainingQuota={copilot.remainingQuota}
+        maxQuota={copilot.maxQuota}
+        showQuota={copilot.showQuota}
+        onSendMessage={copilot.sendMessage}
+        onClearChat={copilot.clearChat}
+      />
 
       <footer className="mt-auto border-t border-slate-900 bg-slate-950 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
