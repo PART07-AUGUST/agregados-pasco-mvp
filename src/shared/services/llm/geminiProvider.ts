@@ -41,17 +41,19 @@ export class GeminiProvider implements ILLMProvider {
   private cachedModels: string[] | null = null;
 
   private getApiKey(): string {
-    const key = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
+    const key = (import.meta.env.VITE_GEMINI_API_KEY ||
+      import.meta.env.GEMINI_API_KEY) as string | undefined;
     if (!key) {
       throw new Error(
-        'Falta configurar la clave VITE_GEMINI_API_KEY en tu archivo .env.local para usar el Copiloto de Inteligencia Artificial.'
+        'Falta configurar la clave VITE_GEMINI_API_KEY o GEMINI_API_KEY para usar el Copiloto de Inteligencia Artificial.'
       );
     }
     return key;
   }
 
   private async getCandidateModels(apiKey: string): Promise<string[]> {
-    const userModel = import.meta.env.VITE_GEMINI_MODEL as string | undefined;
+    const userModel = (import.meta.env.VITE_GEMINI_MODEL ||
+      import.meta.env.GEMINI_MODEL) as string | undefined;
     if (userModel) {
       return [userModel, ...DEFAULT_MODELS.filter((m) => m !== userModel)];
     }
