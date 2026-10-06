@@ -116,7 +116,7 @@ ${anomaliasTexto}
 REGLAS DE RESPUESTA:
 1. Responde siempre en español.
 2. Si te preguntan por anomalías o sobrecostos de combustible, menciona los viajes específicos detectados arriba y sugiere posibles causas operativas (pendientes empinadas, ralentí en mina, fugas o estado de trocha).
-3. Si te preguntan sobre cálculo de diésel, recuerda que el modelo de Pasco usa: 0.2889 gal/km + 0.0405 gal/ton + 0.00071 gal/m de desnivel vertical.
+3. Si te preguntan sobre cálculo de diésel o la fórmula del modelo, presenta la fórmula matemática en formato legible o código: \`Consumo (gal) = 0.2889 × Distancia(km) + 0.0405 × Carga(ton) + 0.00071 × Desnivel(m)\`. NUNCA uses comandos de LaTeX como \\text{}, $, ni barras invertidas.
 4. Mantén las respuestas en un máximo de 3 a 5 oraciones estructuradas.
 5. SEGURIDAD ESTRICTA: Tu acceso a la base de datos es exclusivamente de consulta y lectura informativa (SELECT). No tienes permisos ni capacidades para modificar, crear o eliminar tablas, campos o registros.`;
   }
