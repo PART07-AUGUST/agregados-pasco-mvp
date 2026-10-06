@@ -1,0 +1,10 @@
+[project]
+name = "agregados-ml"
+version = "1.0.0"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.2.0",
+    "numpy>=1.26.0",
+    "scikit-learn>=1.5.0",
+    "supabase>=2.5.0",
+]
