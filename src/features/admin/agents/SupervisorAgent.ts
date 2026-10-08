@@ -1,4 +1,4 @@
-import { geminiProvider } from '../../../shared/services/llm/geminiProvider';
+import { LLMFactory } from '../../../shared/services/llm/llmFactory';
 import type { AgentExecutionOutput, AgentRole, ConversationTurn } from './types';
 
 export class SupervisorAgent {
@@ -15,16 +15,18 @@ INFORMES DE LOS ESPECIALISTAS:
 ${informes}
 
 REGLAS:
-1. Usa subtítulos por área (### Flota, ### Combustible) sin repetir datos.
-2. Si los informes se contradicen, señálalo y prioriza la seguridad y el costo.
-3. Cierra con "### Recomendación" en 1 o 2 oraciones accionables.
-4. Usa SOLO los datos de los informes. Sin LaTeX.`;
+1. Responde obligatoriamente en español profesional y directo al Administrador.
+2. Usa subtítulos por área (### Flota, ### Combustible) sin repetir datos.
+3. Si los informes se contradicen, señálalo y prioriza la seguridad y el costo.
+4. Cierra con "### Recomendación" en 1 o 2 oraciones accionables.
+5. Usa SOLO los datos de los informes. Sin LaTeX.`;
 
-    const response = await geminiProvider.sendMessage({
+    const provider = LLMFactory.getProviderForRole(this.rol);
+    const response = await provider.sendMessage({
       messages: [...historial, { role: 'user', content: consulta }],
       systemInstruction,
       temperature: 0.2,
-      maxOutputTokens: 450,
+      maxOutputTokens: 1000,
     });
 
     const trazasPrevias = dictamenes.flatMap((d) => d.trazas);
