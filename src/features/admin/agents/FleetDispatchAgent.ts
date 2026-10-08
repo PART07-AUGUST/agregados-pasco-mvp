@@ -1,7 +1,7 @@
 import { consultaFlotaTool } from './tools/ConsultaFlotaTool';
 import { consultaPedidosTool } from './tools/ConsultaPedidosTool';
 import { ReActTraceRecorder } from './ReActTraceRecorder';
-import { geminiProvider } from '../../../shared/services/llm/geminiProvider';
+import { LLMFactory } from '../../../shared/services/llm/llmFactory';
 import type { AgentContext, AgentExecutionOutput, AgentRole, ConversationTurn, IAgent } from './types';
 
 export class FleetDispatchAgent implements IAgent {
@@ -34,16 +34,17 @@ OBSERVACIONES VERIFICADAS DE TUS HERRAMIENTAS:
 ${recorder.observacionesTexto}
 
 REGLAS:
-1. Respuesta ejecutiva de 3 a 4 oraciones.
+1. Responde obligatoriamente en español profesional, respuesta ejecutiva de 3 a 4 oraciones.
 2. Usa SOLO los números de las observaciones; no inventes placas ni conductores.
-3. Si hay pedidos y unidades libres, sugiere cuántos viajes de 15 m³ se necesitan.
+3. Si hay pedidos o volumen solicitado y unidades libres, sugiere cuántos viajes de 15 m³ se necesitan.
 4. Sin saludos largos.`;
 
-    const response = await geminiProvider.sendMessage({
+    const provider = LLMFactory.getProviderForRole(this.rol);
+    const response = await provider.sendMessage({
       messages: [...historial, { role: 'user', content: consulta }],
       systemInstruction,
       temperature: 0.2,
-      maxOutputTokens: 350,
+      maxOutputTokens: 600,
     });
 
     return { rol: this.rol, nombre: this.nombre, respuesta: response.content, trazas: recorder.trazas, llamadasLLM: 1 };

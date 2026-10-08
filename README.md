@@ -106,6 +106,38 @@ $$\text{Costo Total} = \sum (\text{Volumen material} \times \text{Precio } \text
 * **Despacho Logístico Desacoplado (`TripAssignModal` & `useTripDispatch`)**:
   - Asignación atómica de chofer y volquete libre a pedidos pendientes mediante RPC PostgreSQL `asignar_viaje`.
 
+### 4. 🤖 Copiloto Inteligente de Operaciones (Multiagente ReAct con LLMs)
+El sistema integra un copiloto conversacional autónomo para el Administrador de Flota, implementado bajo el patrón **ReAct (Reasoning + Acting)** con orquestación multiagente y memoria de traza en tiempo real:
+
+* **Arquitectura de Agentes Especializados**:
+  - **`SupervisorAgent` (Director)**: Analiza semánticamente la consulta del despachador, descompone la meta operativa y delega el flujo al subagente experto idóneo.
+  - **`FleetDispatchAgent` (Logística)**: Consulta en tiempo real el inventario de volquetes, choferes en ruta, capacidades de tolva y asignaciones de pedidos.
+  - **`FuelAuditAgent` (Auditoría Energética)**: Cruza el consumo reportado por los volquetes contra el modelo matemático y detecta sobreconsumos o anomalías.
+* **Bucle de Razonamiento ReAct (`CopilotOrchestrator`)**:
+  - Cada agente ejecuta un ciclo estructurado: $\text{Pensamiento (Thought)} \rightarrow \text{Acción (Tool)} \rightarrow \text{Observación (Observation)} \rightarrow \text{Respuesta Final}$.
+  - **Registro de Trazas (`ReActTraceRecorder`)**: Permite al usuario inspeccionar en un panel visual (`CopilotTracePanel`) el razonamiento interno, qué herramientas consultó el agente y qué datos devolvió la base de datos antes de responder.
+* **Caja de Herramientas Operativas (Agent Tools)**:
+  - `ConsultaFlotaTool`: Inspecciona volquetes activos, modelos y choferes asignados.
+  - `ConsultaPedidosTool`: Consulta cartera de pedidos en curso, destinos y materiales.
+  - `CalculadoraDieselTool`: Predice el gasto de combustible diésel para rutas entre canteras y obras.
+  - `ConsultaAnomaliasTool`: Filtra viajes completados que exceden el umbral de tolerancia de diésel.
+* **Componentes Visuales Especializados**:
+  - `AdminCopilotModal`: Consola interactiva con soporte para prompts rápidos guiados (`CopilotQuickPrompts`).
+  - `CopilotAgentBadge`: Identificador dinámico con código visual de color que indica qué subagente está respondiendo.
+  - `CopilotTracePanel`: Acordeón colapsable para inspección técnica paso a paso del árbol de decisión.
+
+### 5. 🧠 Motor de Machine Learning y Telemetría de Alta Montaña
+En operaciones mineras y de construcción en Cerro de Pasco (con variaciones entre 1,800 y 4,380 m s.n.m.), el consumo de combustible diésel no es lineal y depende drásticamente de la pendiente y la altitud:
+
+* **Modelo Entrenado (`modelo_consumo_diesel.joblib`)**:
+  - Modelo de Machine Learning (Random Forest Regressor) entrenado con telemetría histórica de transporte pesado en Pasco.
+  - **Variables Predictivas**: Kilómetros por carretera ($\text{km}$), Desnivel acumulado positivo/negativo ($\Delta h \text{ en metros}$), Volumen de tolva ($15\text{ a }20\text{ m}^3$) y Altitud promedio de operación.
+* **Persistencia de Parámetros en Base de Datos (`public.ml_parametros`)**:
+  - Factores estequiométricos de corrección por altitud, factor de carga y tolerancia de desviación guardados en PostgreSQL.
+* **Auditoría Automatizada de Viajes**:
+  - Triggers y servicios en tiempo real (`fuelPredictionService.ts`) que contrastan el consumo reportado por el conductor al finalizar el viaje frente al consumo predicho por el modelo ML.
+  - Detección inmediata de anomalías (desviaciones superiores al 15%), alertando al supervisor sobre posibles fugas, desvíos no autorizados o fallas mecánicas en ascenso.
+
 ---
 
 ## 🏛️ Arquitectura de Software y Clean Code
@@ -123,15 +155,40 @@ src/
 │   ├── services/                           # Servicios de Infraestructura e I/O
 │   │   ├── driversService.ts               # Gestión de conductores y generación criptográfica de claves
 │   │   ├── freightService.ts               # Motor de fletes, presets y geocodificación multiescalón
+│   │   ├── fuelPredictionService.ts        # Inferencia de consumo diésel y telemetría de altitud
 │   │   ├── graphhopperService.ts           # Cliente de enrutamiento por carretera y altimetría
 │   │   ├── storageService.ts               # Subida segura de tickets (validación 5MB, MIME y extensiones)
 │   │   ├── supabase.ts                     # Cliente Supabase PostgreSQL
 │   │   ├── tripsService.ts                 # Operaciones de viajes, pesaje y recursos de despacho
-│   │   └── vehiclesService.ts              # CRUD de flota vehicular
+│   │   ├── vehiclesService.ts              # CRUD de flota vehicular
+│   │   └── llm/                            # Proveedores de Inteligencia Artificial
+│   │       ├── geminiProvider.ts           # Conector con Google Gemini API
+│   │       └── copilotRateLimiter.ts       # Rate limiter preventivo de tokens y llamadas
 │   └── utils/
 │       └── supabaseRelations.ts            # Mappers puros para uniones relacionales de Supabase
 │
 ├── features/                               # Módulos por Dominio de Negocio
+│   ├── admin/                              # Consola de Despacho y Copiloto IA
+│   │   ├── agents/                         # Arquitectura Multiagente ReAct
+│   │   │   ├── CopilotOrchestrator.ts      # Orquestador del ciclo ReAct
+│   │   │   ├── SupervisorAgent.ts          # Agente de clasificación e intención
+│   │   │   ├── FleetDispatchAgent.ts       # Agente especialista en flota y volquetes
+│   │   │   ├── FuelAuditAgent.ts           # Agente especialista en combustible diésel
+│   │   │   ├── ReActTraceRecorder.ts       # Grabador de traza de razonamiento
+│   │   │   └── tools/                      # Herramientas operativas del copiloto
+│   │   │       ├── CalculadoraDieselTool   # Predicción de consumo con modelo ML
+│   │   │       ├── ConsultaAnomaliasTool   # Detección de sobreconsumos
+│   │   │       ├── ConsultaFlotaTool       # Disponibilidad y estado de flota
+│   │   │       └── ConsultaPedidosTool     # Cartera de pedidos de cantera
+│   │   ├── components/                     # Interfaz de Usuario del Copiloto
+│   │   │   ├── AdminCopilotModal.tsx       # Modal conversacional interactivo
+│   │   │   ├── CopilotMessageList.tsx      # Historial de diálogo estructurado
+│   │   │   ├── CopilotTracePanel.tsx       # Inspector de traza paso a paso
+│   │   │   ├── CopilotAgentBadge.tsx       # Identificador visual del agente activo
+│   │   │   └── CopilotQuickPrompts.tsx     # Preguntas rápidas y atajos operativos
+│   │   └── hooks/
+│   │       └── useAdminCopilot.ts          # Presenter Hook: Estado del orquestador ReAct
+│   │
 │   ├── auth/
 │   │   └── components/
 │   │       ├── LoginForm.tsx               # Acceso unificado por roles
@@ -195,13 +252,7 @@ La plataforma aplica el principio de **Defensa en Profundidad** (*Defense in Dep
    - Blindaje de `SET search_path = public, auth, pg_temp;` en todas las funciones con privilegios elevados (`SECURITY DEFINER`).
    - Revocación de `EXECUTE` a usuarios anónimos (`anon` y `PUBLIC`) en todas las funciones de negocio e internas de trigger.
 
-### Despliegue de Migraciones en Supabase:
-Las migraciones versionadas se encuentran en `supabase/migrations/`:
-- `20260527_seed_users_storage_and_trip_guards.sql`: Semilla base y políticas iniciales.
-- `20260905_admin_create_driver_rpc.sql`: Procedimiento atómico para registro de choferes.
-- `20260906_security_hardening.sql`: Script integral de hardening, inmutabilidad de roles y cierre de privilegios.
-
-Para aplicarlas, copie el contenido de la migración en el **SQL Editor** del panel de control de Supabase y ejecute el script.
+> Para la matriz detallada de cumplimiento normativo (**CIS Controls v8**, **OWASP ASVS v4.0** e **ISO/IEC 27001**), consulte la [Política de Seguridad Formal](SECURITY.md).
 
 ---
 
@@ -209,15 +260,19 @@ Para aplicarlas, copie el contenido de la migración en el **SQL Editor** del pa
 
 * **Frontend**: React 19 + Vite 8 + TypeScript (Modo Estricto).
 * **Estilizado**: Tailwind CSS v4 + Lucide React Icons.
+* **Inteligencia Artificial y Modelos**:
+  * **Google Gemini API** (`@google/genai`): Motor de razonamiento cognitivo y comprensión semántica.
+  * **Scikit-Learn & Joblib** (`modelo_consumo_diesel.joblib`): Modelo de regresión predictiva entrenado para gradientes de alta montaña.
+  * **Arquitectura Multiagente ReAct**: Ciclo de razonamiento *Thought-Action-Observation* con memoria de traza en vivo.
 * **Gestión de Estado**: Zustand (sesión y autenticación global).
 * **Motores Geoespaciales**:
   * **Google Maps Platform** (Maps JavaScript API).
-  * **GraphHopper Routing API** (perfil vial de carga pesada).
+  * **GraphHopper Routing API** (perfil vial de carga pesada y perfiles altimétricos).
   * **Photon / Komoot OpenStreetMap** (geocodificación de alta velocidad con proximity bias).
 * **Persistencia Offline**: IndexedDB nativo (`offlineDb.ts`) para fotos de tickets y cola transaccional.
 * **Backend como Servicio (BaaS)**: Supabase (PostgreSQL 15+).
-  * **Row Level Security (RLS)**: Aislamiento por roles (`ADMINISTRADOR`, `CONDUCTOR`, `CLIENTE`).
-  * **Stored Procedures (RPC)**: `asignar_viaje`, `registrar_ticket_balanza`, `confirmar_entrega`, `admin_crear_conductor`, `marcar_password_actualizada`.
+  * **Row Level Security (RLS)**: Aislamiento por roles (`ADMINISTRADOR`, `CONDUCTOR`, `CLIENTE`) y helpers `SECURITY DEFINER` antirrecursión.
+  * **Stored Procedures (RPC)**: `asignar_viaje`, `iniciar_viaje`, `registrar_ticket_balanza`, `confirmar_entrega`, `admin_crear_conductor`, `marcar_password_actualizada`.
   * **Supabase Storage**: Bucket `tickets-balanza` con cuota de 5 MB y validación MIME.
 * **Gestor de Paquetes**: `pnpm` v11.4+.
 
@@ -243,6 +298,9 @@ VITE_GOOGLE_MAPS_API_KEY=tu-google-maps-api-key
 
 # GraphHopper Routing API (Cálculo de distancias viales por carretera)
 VITE_GRAPHHOPPER_API_KEY=tu-graphhopper-api-key
+
+# Google Gemini API (Copiloto Operativo de IA Multiagente)
+VITE_GEMINI_API_KEY=tu-gemini-api-key
 ```
 
 ---
@@ -292,9 +350,6 @@ flowchart LR
 2. **Ejecutar Migraciones SQL**:
    - Dirígete a la sección **SQL Editor** en la barra lateral.
    - Ejecuta en orden secuencial los scripts contenidos en `supabase/migrations/`:
-     1. `20260527_seed_users_storage_and_trip_guards.sql` (esquema inicial, tablas de viajes, pesajes y catálogo de vehículos).
-     2. `20260905_admin_create_driver_rpc.sql` (procedimiento almacenado `admin_crear_conductor` con `SECURITY DEFINER`).
-     3. `20260906_security_hardening.sql` (blindaje de roles, inmutabilidad de perfiles, cambio forzado de contraseña y RLS).
 
 3. **Configurar Almacenamiento (Supabase Storage)**:
    - Ve a **Storage** en la barra lateral.
@@ -346,10 +401,10 @@ En el panel de tu proyecto en Vercel, navega a **Settings** > **Environment Vari
 
 | Variable | Descripción | Ejemplo / Fuente |
 | :--- | :--- | :--- |
-| `VITE_SUPABASE_URL` | URL de tu API REST de Supabase | `https://xxxx.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | Clave pública anónima de Supabase | `eyJhbGciOi...` |
-| `VITE_GOOGLE_MAPS_API_KEY` | API Key de Google Maps Platform con Maps JS API | `AIzaSy...` |
-| `VITE_GRAPHHOPPER_API_KEY` | Clave de API de GraphHopper para enrutamiento vial | `7cc2e017-xxxx-xxxx...` |
+| `VITE_SUPABASE_URL` | URL de tu API REST de Supabase |
+| `VITE_SUPABASE_ANON_KEY` | Clave pública anónima de Supabase |
+| `VITE_GOOGLE_MAPS_API_KEY` | API Key de Google Maps Platform con Maps JS API |
+| `VITE_GRAPHHOPPER_API_KEY` | Clave de API de GraphHopper para enrutamiento vial |
 
 > [!IMPORTANT]
 > Tras registrar o actualizar variables de entorno en Vercel, es indispensable realizar un nuevo despliegue (**Redeploy**) para que los valores se inyecten durante la fase de compilación del bundle de Vite.

@@ -1,7 +1,8 @@
 import type { ILLMProvider, LLMRequestOptions, LLMResponse } from '../../types/llm';
 
 interface GeminiPart {
-  text: string;
+  text?: string;
+  thought?: boolean;
 }
 
 interface GeminiContent {
@@ -34,7 +35,7 @@ interface GeminiListModelsResponse {
   models?: GeminiModelItem[];
 }
 
-const DEFAULT_MODELS = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-3.8-flash'];
+const DEFAULT_MODELS = ['gemini-flash-latest', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'];
 
 export class GeminiProvider implements ILLMProvider {
   readonly name = 'Google Gemini';
@@ -73,6 +74,7 @@ export class GeminiProvider implements ILLMProvider {
           .filter((name) => {
             const lower = name.toLowerCase();
             return (
+              !lower.includes('2.5') &&
               !lower.includes('tts') &&
               !lower.includes('audio') &&
               !lower.includes('speech') &&
@@ -86,6 +88,8 @@ export class GeminiProvider implements ILLMProvider {
 
         if (validModels.length > 0) {
           validModels.sort((a, b) => {
+            if (a === 'gemini-flash-latest') return -1;
+            if (b === 'gemini-flash-latest') return 1;
             if (a === 'gemini-1.5-flash') return -1;
             if (b === 'gemini-1.5-flash') return 1;
             if (a.includes('flash') && !b.includes('flash')) return -1;
@@ -131,7 +135,7 @@ export class GeminiProvider implements ILLMProvider {
     const body: Record<string, unknown> = {
       contents,
       generationConfig: {
-        maxOutputTokens: options.maxOutputTokens ?? 400,
+        maxOutputTokens: options.maxOutputTokens ?? 1000,
         temperature: options.temperature ?? 0.2,
       },
     };
@@ -195,7 +199,15 @@ export class GeminiProvider implements ILLMProvider {
           }
 
           const data = (await response.json()) as GeminiApiResponse;
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          const candidateParts = data.candidates?.[0]?.content?.parts ?? [];
+          const finalParts = candidateParts.filter(
+            (p) => !p.thought && typeof p.text === 'string' && p.text.trim().length > 0
+          );
+          const fallbackParts = candidateParts.filter(
+            (p) => typeof p.text === 'string' && p.text.trim().length > 0
+          );
+          const selectedParts = finalParts.length > 0 ? finalParts : fallbackParts;
+          const text = selectedParts.map((p) => p.text).join('\n').trim();
 
           if (!text) {
             throw new Error('La respuesta del modelo de inteligencia artificial fue vacía.');

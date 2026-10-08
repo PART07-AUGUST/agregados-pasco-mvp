@@ -4,7 +4,7 @@ import { RouteParamsParser, type RouteParams } from './parsers/RouteParamsParser
 import { ReActTraceRecorder } from './ReActTraceRecorder';
 import { buildMLFormulaText, buildMLMetricsText } from './formatters/mlFormulaText';
 import { matchesAnomalia, matchesCalculo } from './keywordMatcher';
-import { geminiProvider } from '../../../shared/services/llm/geminiProvider';
+import { LLMFactory } from '../../../shared/services/llm/llmFactory';
 import type { AgentContext, AgentExecutionOutput, AgentRole, ConversationTurn, IAgent } from './types';
 
 export class FuelAuditAgent implements IAgent {
@@ -26,7 +26,8 @@ export class FuelAuditAgent implements IAgent {
       await this.ejecutarAuditoria(recorder, contexto);
     }
 
-    const response = await geminiProvider.sendMessage({
+    const provider = LLMFactory.getProviderForRole(this.rol);
+    const response = await provider.sendMessage({
       messages: [...historial, { role: 'user', content: consulta }],
       systemInstruction: this.construirInstruccion(recorder.observacionesTexto, contexto),
       temperature: 0.1,
@@ -39,6 +40,9 @@ export class FuelAuditAgent implements IAgent {
   private resolverParametros(consulta: string, historial: ConversationTurn[]): RouteParams {
     const actuales = RouteParamsParser.parse(consulta);
     if (actuales.distanciaKm !== undefined) {
+      return actuales;
+    }
+    if (actuales.destinoDetectado || /ruta|hacia|destino|llegar|llevar a|av\.|calle|jr\./i.test(consulta)) {
       return actuales;
     }
     const ultimaPreguntaConRuta = [...historial]
@@ -55,10 +59,13 @@ export class FuelAuditAgent implements IAgent {
       desnivelMetros: params.desnivelMetros ?? 0,
       pesoCargaTon: params.pesoCargaTon ?? 18.5,
     };
-    const origenPeso = params.volumenM3 !== undefined ? ` (desde ${params.volumenM3} m³ × 1.45)` : '';
+    const origenPeso = params.volumenM3 !== undefined ? ` (${params.volumenM3} m³ ≈ ${parametros.pesoCargaTon} ton)` : '';
+    const infoDestino = params.destinoDetectado
+      ? ` hacia ${params.destinoDetectado}${params.esDistanciaReferencial ? ' (referencial regional)' : ''}`
+      : '';
     const resultado = await calculadoraDieselTool.ejecutar(parametros, contexto);
     recorder.registrar({
-      pensamiento: `Detecté ruta de ${parametros.distanciaKm} km, desnivel ${parametros.desnivelMetros} m y carga ${parametros.pesoCargaTon} ton${origenPeso}. Invoco la calculadora ML.`,
+      pensamiento: `Detecté ruta${infoDestino} de ${parametros.distanciaKm} km, desnivel ${parametros.desnivelMetros} m y carga ${parametros.pesoCargaTon} ton${origenPeso}. Invoco la calculadora ML.`,
       herramienta: calculadoraDieselTool.nombre,
       parametros: parametros,
       resultado,
@@ -96,7 +103,7 @@ OBSERVACIONES VERIFICADAS DE TUS HERRAMIENTAS:
 ${observaciones}
 
 REGLAS:
-1. Máximo 3 a 4 oraciones, tono técnico.
+1. Responde obligatoriamente en español técnico, de 3 a 4 oraciones.
 2. Usa SOLO los números de las observaciones; no inventes datos.
 3. Si hubo cálculo, menciona galones y costo en soles.
 4. Si falta la distancia, pídela explicando que es obligatoria para la fórmula.

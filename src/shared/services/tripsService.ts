@@ -292,6 +292,22 @@ export const tripsService = {
     }
 
     try {
+      if (estado === 'EN_CAMINO') {
+        const { error } = await supabase.rpc('iniciar_viaje', { p_viaje_id: id });
+        if (error) {
+          throw error;
+        }
+        return;
+      }
+
+      if (estado === 'ENTREGADO') {
+        const { error } = await supabase.rpc('confirmar_entrega', { p_viaje_id: id });
+        if (error) {
+          throw error;
+        }
+        return;
+      }
+
       const { error } = await supabase
         .from('viajes')
         .update({ estado })
@@ -301,7 +317,7 @@ export const tripsService = {
         throw error;
       }
     } catch (error: unknown) {
-      console.warn('Error de red al actualizar estado, guardando en cola offline:', error);
+      console.warn('Error al actualizar estado, aplicando fallback en cola offline:', error);
       return this.updateTripStateOffline(id, estado);
     }
   },
