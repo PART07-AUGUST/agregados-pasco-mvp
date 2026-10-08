@@ -1,12 +1,12 @@
 import { Bot, X, Trash2, Send, AlertCircle, Sparkles } from 'lucide-react';
-import type { LLMMessage } from '../../../shared/types/llm';
+import type { AgentRole, CopilotChatMessage } from '../agents/types';
 import { CopilotMessageList } from './CopilotMessageList';
 import { CopilotQuickPrompts } from './CopilotQuickPrompts';
 
 interface AdminCopilotModalProps {
   isOpen: boolean;
   onClose: () => void;
-  messages: LLMMessage[];
+  messages: CopilotChatMessage[];
   input: string;
   setInput: (value: string) => void;
   isGenerating: boolean;
@@ -14,7 +14,7 @@ interface AdminCopilotModalProps {
   remainingQuota?: number;
   maxQuota?: number;
   showQuota?: boolean;
-  onSendMessage: (prompt?: string) => void;
+  onSendMessage: (prompt?: string, agente?: AgentRole) => void;
   onClearChat: () => void;
 }
 
@@ -54,10 +54,10 @@ export function AdminCopilotModal({
               <div className="flex items-center gap-1.5">
                 <h3 className="text-xs font-black text-white tracking-tight">SIS-COPILOT</h3>
                 <span className="text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30 flex items-center gap-0.5">
-                  <Sparkles className="h-2.5 w-2.5" /> AI
+                  <Sparkles className="h-2.5 w-2.5" /> ReAct
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400">Consultas en vivo a BD y Modelo ML</p>
+              <p className="text-[10px] text-slate-400">Sistema Multi-Agente ReAct · ML Pasco</p>
             </div>
           </div>
 

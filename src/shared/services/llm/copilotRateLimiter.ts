@@ -57,18 +57,26 @@ export class CopilotRateLimiter {
   }
 
   static canMakeRequest(): boolean {
+    return this.hasQuotaFor(1);
+  }
+
+  static hasQuotaFor(count: number): boolean {
     if (!this.isRateLimitActive()) {
       return true;
     }
-    return this.getRemainingQuota() > 0;
+    return this.getRemainingQuota() >= count;
   }
 
   static recordRequest(): void {
-    if (!this.isRateLimitActive()) {
+    this.recordRequests(1);
+  }
+
+  static recordRequests(count: number): void {
+    if (!this.isRateLimitActive() || count <= 0) {
       return;
     }
     const record = this.getRecord();
-    record.count += 1;
+    record.count += count;
     this.saveRecord(record);
   }
 }
