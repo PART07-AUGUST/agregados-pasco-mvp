@@ -5,6 +5,8 @@ import { RouteParamsParser } from './parsers/RouteParamsParser';
 import { matchesCombustible, matchesFlota } from './keywordMatcher';
 import { AdminLogisticsContextService } from '../../../shared/services/adminLogisticsContextService';
 import { FuelPredictionService } from '../../../shared/services/fuelPredictionService';
+import { apiClient } from '../../../shared/services/apiClient';
+import type { ConsultaCopilotResponseDto } from '../../../shared/types/api/copilotDto';
 import type { AgentContext, AgentExecutionOutput, AgentRole, ConversationTurn, IAgent, ReActTraceStep } from './types';
 
 type Ruta = 'AUDITOR_ML' | 'FLOTA_DESPACHO' | 'COMITE';
@@ -18,6 +20,26 @@ export class CopilotOrchestrator {
     agenteForzado?: AgentRole,
     presupuestoLlamadas = Number.POSITIVE_INFINITY
   ): Promise<AgentExecutionOutput> {
+    try {
+      const response = await apiClient.post<ConsultaCopilotResponseDto>('/copilot/consultas', {
+        mensaje: consulta,
+        historial: historial.map((h) => ({ rol: h.role, contenido: h.content })),
+        rol_forzado: agenteForzado,
+      });
+
+      if (response?.respuesta) {
+        return {
+          rol: response.rol,
+          nombre: response.nombre_agente,
+          respuesta: response.respuesta,
+          trazas: response.trazas.map((traza, indice) => ({ ...traza, paso: indice + 1 })),
+          llamadasLLM: response.llamadas_llm,
+        };
+      }
+    } catch {
+      // Fallback local en caso de que el backend esté en transición o offline
+    }
+
     const contexto = await this.cargarContexto();
     const ruta = this.decidirRuta(consulta, agenteForzado, presupuestoLlamadas);
     const resultado = await this.ejecutarRuta(ruta, consulta, contexto, historial);
