@@ -14,6 +14,9 @@ export interface LogisticsSnapshot {
   totalVehiculos: number;
   vehiculosDisponibles: number;
   vehiculosEnRuta: number;
+  totalConductores: number;
+  conductoresDisponibles: number;
+  conductoresEnRuta: number;
   viajesActivos: number;
   pedidosPendientes: number;
   anomaliasCombustible: FuelAnomaly[];
@@ -24,12 +27,14 @@ export class AdminLogisticsContextService {
     try {
       const [
         { data: vehiculos },
+        { data: conductores },
         { data: viajesActivos },
         { data: pedidosPendientes },
         { data: viajesRecientes },
       ] = await Promise.all([
         supabase.from('vehiculos').select('id, placa, activo').eq('activo', true),
-        supabase.from('viajes').select('id, vehiculo_id, estado').in('estado', ['PENDIENTE', 'EN_CAMINO', 'EN_BALANZA']),
+        supabase.from('usuarios').select('id, nombre').eq('rol', 'CONDUCTOR'),
+        supabase.from('viajes').select('id, vehiculo_id, conductor_id, estado').in('estado', ['PENDIENTE', 'EN_CAMINO', 'EN_BALANZA']),
         supabase.from('pedidos').select('id, estado').eq('estado', 'PENDIENTE'),
         supabase
           .from('viajes')
@@ -44,6 +49,13 @@ export class AdminLogisticsContextService {
       const vehiculosOcupadosIds = new Set(viajesActivos?.map((v) => v.vehiculo_id) ?? []);
       const vehiculosDisponibles = (vehiculos ?? []).filter((v) => !vehiculosOcupadosIds.has(v.id)).length;
       const vehiculosEnRuta = vehiculosOcupadosIds.size;
+
+      const totalConductores = conductores?.length ?? 0;
+      const conductoresOcupadosIds = new Set(
+        viajesActivos?.map((v) => v.conductor_id).filter(Boolean) ?? []
+      );
+      const conductoresDisponibles = (conductores ?? []).filter((c) => !conductoresOcupadosIds.has(c.id)).length;
+      const conductoresEnRuta = conductoresOcupadosIds.size;
 
       const anomaliasCombustible: FuelAnomaly[] = [];
 
@@ -69,16 +81,21 @@ export class AdminLogisticsContextService {
         totalVehiculos,
         vehiculosDisponibles,
         vehiculosEnRuta,
+        totalConductores,
+        conductoresDisponibles,
+        conductoresEnRuta,
         viajesActivos: viajesActivos?.length ?? 0,
         pedidosPendientes: pedidosPendientes?.length ?? 0,
         anomaliasCombustible,
       };
-    } catch (err: unknown) {
-      console.warn('Error al obtener snapshot logístico para el copiloto:', err);
+    } catch {
       return {
         totalVehiculos: 0,
         vehiculosDisponibles: 0,
         vehiculosEnRuta: 0,
+        totalConductores: 0,
+        conductoresDisponibles: 0,
+        conductoresEnRuta: 0,
         viajesActivos: 0,
         pedidosPendientes: 0,
         anomaliasCombustible: [],
@@ -108,6 +125,9 @@ DATOS OPERATIVOS EN TIEMPO REAL DESDE LA BASE DE DATOS:
 - Flota total activa: ${snapshot.totalVehiculos} volquetes.
 - Volquetes disponibles para asignación: ${snapshot.vehiculosDisponibles}.
 - Volquetes en operación o ruta: ${snapshot.vehiculosEnRuta}.
+- Conductores registrados: ${snapshot.totalConductores} conductores.
+- Conductores disponibles: ${snapshot.conductoresDisponibles}.
+- Conductores en operación o ruta: ${snapshot.conductoresEnRuta}.
 - Despachos en curso: ${snapshot.viajesActivos}.
 - Pedidos de clientes pendientes de atención: ${snapshot.pedidosPendientes}.
 - Auditoría de combustible según modelo de Machine Learning (R² 97.9%, MAE 0.289 gal):

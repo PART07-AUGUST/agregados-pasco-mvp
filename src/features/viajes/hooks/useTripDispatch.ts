@@ -38,9 +38,7 @@ export function useTripDispatch(order: Pedido, onSuccess: () => void) {
           );
         }
       } finally {
-        if (!cancelled) {
-          setFetching(false);
-        }
+        setFetching(false);
       }
     };
 

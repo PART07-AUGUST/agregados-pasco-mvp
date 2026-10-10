@@ -13,7 +13,7 @@ export class FleetDispatchAgent implements IAgent {
 
     const resultadoFlota = await consultaFlotaTool.ejecutar({}, contexto);
     recorder.registrar({
-      pensamiento: `Necesito saber la capacidad real: hay ${contexto.snapshot.totalVehiculos} volquetes activos registrados.`,
+      pensamiento: `Necesito saber la capacidad real: hay ${contexto.snapshot.totalVehiculos} volquetes y ${contexto.snapshot.totalConductores} conductores registrados.`,
       herramienta: consultaFlotaTool.nombre,
       parametros: {},
       resultado: resultadoFlota,
@@ -21,14 +21,14 @@ export class FleetDispatchAgent implements IAgent {
 
     const resultadoPedidos = await consultaPedidosTool.ejecutar({}, contexto);
     recorder.registrar({
-      pensamiento: `Con ${contexto.snapshot.vehiculosDisponibles} unidades libres, reviso la carga de pedidos pendientes.`,
+      pensamiento: `Con ${contexto.snapshot.vehiculosDisponibles} volquetes y ${contexto.snapshot.conductoresDisponibles} conductores libres, reviso la carga de pedidos pendientes.`,
       herramienta: consultaPedidosTool.nombre,
       parametros: {},
       resultado: resultadoPedidos,
     });
 
     const systemInstruction = `Eres el JEFE DE FLOTA Y DESPACHO de AGREGADOS SIS en Cerro de Pasco.
-Coordinas volquetes (capacidad típica 15 m³ ≈ 21.75 ton) y priorizas pedidos.
+Coordinas volquetes (capacidad típica 15 m³ ≈ 21.75 ton), asignación de conductores y priorizas pedidos.
 
 OBSERVACIONES VERIFICADAS DE TUS HERRAMIENTAS:
 ${recorder.observacionesTexto}
