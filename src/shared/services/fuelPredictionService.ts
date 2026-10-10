@@ -1,4 +1,9 @@
-import { supabase } from './supabase';
+import { apiClient } from './apiClient';
+import type {
+  EstimacionDieselRequestDto,
+  EstimacionDieselResponseDto,
+  MLParametrosDto,
+} from '../types/api/mlDto';
 
 export interface FuelPredictionInput {
   distanciaKm: number;
@@ -36,7 +41,7 @@ const DEFAULT_PARAMS: MLModelParams = {
   actualizadoEn: '2026-09-30T19:47:00Z',
 };
 
-const PRECIO_DIESEL_PASCO_SOL = 17.50;
+const PRECIO_DIESEL_PASCO_SOL = 17.5;
 const FACTOR_EMISION_CO2_POR_GALON = 10.21;
 
 let activeParams: MLModelParams = DEFAULT_PARAMS;
@@ -53,13 +58,9 @@ export class FuelPredictionService {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('ml_parametros')
-        .select('*')
-        .eq('id', 'diesel_model_v1')
-        .maybeSingle();
+      const data = await apiClient.get<MLParametrosDto>('/ml/parametros');
 
-      if (!error && data) {
+      if (data) {
         activeParams = {
           intercepto: Number(data.intercepto),
           coefDistanciaKm: Number(data.coef_distancia_km),
@@ -100,6 +101,32 @@ export class FuelPredictionService {
       precioGalonSoles: PRECIO_DIESEL_PASCO_SOL,
       r2Score: params.r2Score,
     };
+  }
+
+  static async predictOnline(input: FuelPredictionInput): Promise<FuelPredictionResult> {
+    try {
+      const payload: EstimacionDieselRequestDto = {
+        distancia_km: input.distanciaKm,
+        desnivel_metros: input.desnivelMetros,
+        peso_carga_ton: input.pesoCargaTon,
+      };
+
+      const res = await apiClient.post<EstimacionDieselResponseDto>('/ml/estimaciones', payload);
+      const consumo = Number(res.consumo_estimado_galones);
+      const costo = Number(res.costo_estimado_pen);
+      const precioGalon = Number(res.precio_galon_referencial_pen) || PRECIO_DIESEL_PASCO_SOL;
+      const emisionesCo2Kg = Math.round(consumo * FACTOR_EMISION_CO2_POR_GALON * 100) / 100;
+
+      return {
+        consumoDieselGalones: consumo,
+        costoEstimadoSoles: costo,
+        emisionesCo2Kg,
+        precioGalonSoles: precioGalon,
+        r2Score: activeParams.r2Score,
+      };
+    } catch {
+      return this.predict(input);
+    }
   }
 
   static estimateTripParams(volumenM3: number): FuelPredictionInput {

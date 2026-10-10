@@ -86,9 +86,9 @@ export function DestinationPresetList({
                 <MapPin className="h-3 w-3" />
                 <span>Lugares detectados en el mapa</span>
               </div>
-              {suggestions.map((item, idx) => (
+              {suggestions.map((item) => (
                 <button
-                  key={`${item.displayName}-${idx}`}
+                  key={`${item.lat}_${item.lng}_${item.displayName}`}
                   type="button"
                   onMouseDown={(e) => {
                     e.preventDefault();
@@ -106,7 +106,7 @@ export function DestinationPresetList({
         <button
           type="submit"
           disabled={searchingAddress || !customDestino.trim()}
-          className="px-3 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shadow-md shadow-amber-500/10"
+          className="px-3 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors shadow-md shadow-amber-500/10"
           title="Buscar dirección en Google Maps"
         >
           <Search className="h-4 w-4" />

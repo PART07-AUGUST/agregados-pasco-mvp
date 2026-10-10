@@ -1,47 +1,10 @@
+import { apiClient } from './apiClient';
 import { supabase } from './supabase';
 import type { Viaje } from '../types';
 import { offlineDb } from './offlineDb';
-import { getSingleRelation, getJoinedNombre } from '../utils/supabaseRelations';
-
-interface TripOrderRow {
-  material: string | null;
-  volumen_m3: number | string | null;
-  destino: string | null;
-  usuarios?: {
-    nombre: string | null;
-  } | Array<{
-    nombre: string | null;
-  }> | null;
-}
-
-interface TripVehicleRow {
-  placa: string | null;
-}
-
-interface TripDriverRow {
-  nombre: string | null;
-}
-
-interface TripRow {
-  id: string;
-  pedido_id: string;
-  vehiculo_id: string;
-  conductor_id: string;
-  estado: Viaje['estado'];
-  peso_entrada_kg: number | string | null;
-  peso_salida_kg: number | string | null;
-  ticket_balanza_url: string | null;
-  fecha_asignacion: string;
-  fecha_entrega: string | null;
-  distancia_km?: number | string | null;
-  desnivel_metros?: number | string | null;
-  cantera_origen?: string | null;
-  consumo_diesel_estimado?: number | string | null;
-  consumo_diesel_real?: number | string | null;
-  pedidos?: TripOrderRow | TripOrderRow[] | null;
-  vehiculos?: TripVehicleRow | TripVehicleRow[] | null;
-  usuarios?: TripDriverRow | TripDriverRow[] | null;
-}
+import { viajeMapper } from '../mappers/viajeMapper';
+import type { PageResponse } from '../types/api/pageResponse';
+import type { ViajeResponseDto } from '../types/api/viajeDto';
 
 export interface ViajeDetallado extends Viaje {
   clienteNombre?: string;
@@ -71,95 +34,125 @@ export interface DispatchResources {
   conductores: ConductorDespachoOption[];
 }
 
-function mapTripRow(t: TripRow): ViajeDetallado {
-  const pedido = getSingleRelation(t.pedidos);
-  const vehiculo = getSingleRelation(t.vehiculos);
-  const conductor = getSingleRelation(t.usuarios);
+interface PedidoRowEnrichment {
+  id: string;
+  material: string | null;
+  volumen_m3: number | string | null;
+  destino: string | null;
+  usuarios?: { nombre: string | null } | Array<{ nombre: string | null }> | null;
+}
 
-  return {
-    id: t.id,
-    pedidoId: t.pedido_id,
-    vehiculoId: t.vehiculo_id,
-    conductorId: t.conductor_id,
-    estado: t.estado,
-    pesoEntradaKg: t.peso_entrada_kg ? Number(t.peso_entrada_kg) : undefined,
-    pesoSalidaKg: t.peso_salida_kg ? Number(t.peso_salida_kg) : undefined,
-    ticketBalanzaUrl: t.ticket_balanza_url || undefined,
-    fechaAsignacion: t.fecha_asignacion,
-    fechaEntrega: t.fecha_entrega || undefined,
-    distanciaKm: t.distancia_km != null ? Number(t.distancia_km) : undefined,
-    desnivelMetros: t.desnivel_metros != null ? Number(t.desnivel_metros) : undefined,
-    canteraOrigen: t.cantera_origen ?? undefined,
-    consumoDieselEstimado: t.consumo_diesel_estimado != null ? Number(t.consumo_diesel_estimado) : undefined,
-    consumoDieselReal: t.consumo_diesel_real != null ? Number(t.consumo_diesel_real) : undefined,
-    material: pedido?.material ?? undefined,
-    volumenM3: pedido?.volumen_m3 ? Number(pedido.volumen_m3) : undefined,
-    destino: pedido?.destino ?? undefined,
-    clienteNombre: getJoinedNombre(pedido?.usuarios) || undefined,
-    placa: vehiculo?.placa ?? undefined,
-    conductorNombre: conductor?.nombre ?? undefined,
-  };
+interface VehiculoRowEnrichment {
+  id: string;
+  placa: string;
+}
+
+interface ConductorRowEnrichment {
+  id: string;
+  nombre: string;
+}
+
+interface SupabaseTripRow {
+  id: string;
+  pedido_id: string;
+  vehiculo_id: string;
+  conductor_id: string;
+  estado: Viaje['estado'];
+  peso_entrada_kg: number | string | null;
+  peso_salida_kg: number | string | null;
+  ticket_balanza_url: string | null;
+  fecha_asignacion: string;
+  fecha_entrega: string | null;
+  distancia_km?: number | string | null;
+  desnivel_metros?: number | string | null;
+  cantera_origen?: string | null;
+  consumo_diesel_estimado?: number | string | null;
+  consumo_diesel_real?: number | string | null;
+  pedidos?: PedidoRowEnrichment | PedidoRowEnrichment[] | null;
+  vehiculos?: { placa: string | null } | Array<{ placa: string | null }> | null;
+  usuarios?: { nombre: string | null } | Array<{ nombre: string | null }> | null;
+}
+
+async function fetchEnrichmentData() {
+  try {
+    const [ordersResult, vehiclesResult, driversResult] = await Promise.all([
+      supabase
+        .from('pedidos')
+        .select('id, material, volumen_m3, destino, usuarios:cliente_id (nombre)'),
+      supabase
+        .from('vehiculos')
+        .select('id, placa'),
+      supabase
+        .from('usuarios')
+        .select('id, nombre')
+        .eq('rol', 'CONDUCTOR'),
+    ]);
+
+    return {
+      orders: (ordersResult.data || []) as unknown as PedidoRowEnrichment[],
+      vehicles: (vehiclesResult.data || []) as unknown as VehiculoRowEnrichment[],
+      drivers: (driversResult.data || []) as unknown as ConductorRowEnrichment[],
+    };
+  } catch {
+    return {
+      orders: [] as PedidoRowEnrichment[],
+      vehicles: [] as VehiculoRowEnrichment[],
+      drivers: [] as ConductorRowEnrichment[],
+    };
+  }
 }
 
 export const tripsService = {
   async getTrips(): Promise<ViajeDetallado[]> {
-    const { data, error } = await supabase
-      .from('viajes')
-      .select(`
-        id,
-        pedido_id,
-        vehiculo_id,
-        conductor_id,
-        estado,
-        peso_entrada_kg,
-        peso_salida_kg,
-        ticket_balanza_url,
-        fecha_asignacion,
-        fecha_entrega,
-        distancia_km,
-        desnivel_metros,
-        cantera_origen,
-        consumo_diesel_estimado,
-        consumo_diesel_real,
-        pedidos:pedido_id (
-          material,
-          volumen_m3,
-          destino,
-          usuarios:cliente_id (
-            nombre
-          )
-        ),
-        vehiculos:vehiculo_id (
-          placa
-        ),
-        usuarios:conductor_id (
-          nombre
-        )
-      `)
-      .order('fecha_asignacion', { ascending: false });
+    const [tripsPage, enrichment] = await Promise.all([
+      apiClient.get<PageResponse<ViajeResponseDto>>('/viajes?page=1&page_size=100'),
+      fetchEnrichmentData(),
+    ]);
 
-    if (error) {
-      console.error('Error al obtener viajes:', error);
-      throw error;
-    }
+    const orderMap = new Map<string, { material?: string; volumenM3?: number; destino?: string; clienteNombre?: string }>();
+    enrichment.orders.forEach((o) => {
+      const clienteNombre = Array.isArray(o.usuarios)
+        ? o.usuarios[0]?.nombre ?? undefined
+        : o.usuarios?.nombre ?? undefined;
 
-    return (data as TripRow[] | null)?.map(mapTripRow) ?? [];
-  },
-
-
-  async assignTrip(pedidoId: string, vehiculoId: string, conductorId: string): Promise<string> {
-    const { data, error } = await supabase.rpc('asignar_viaje', {
-      p_pedido_id: pedidoId,
-      p_vehiculo_id: vehiculoId,
-      p_conductor_id: conductorId,
+      orderMap.set(o.id, {
+        material: o.material ?? undefined,
+        volumenM3: o.volumen_m3 != null ? Number(o.volumen_m3) : undefined,
+        destino: o.destino ?? undefined,
+        clienteNombre,
+      });
     });
 
-    if (error) {
-      console.error('Error al asignar viaje mediante RPC:', error);
-      throw error;
-    }
+    const vehicleMap = new Map<string, string>();
+    enrichment.vehicles.forEach((v) => {
+      vehicleMap.set(v.id, v.placa);
+    });
 
-    return data as string;
+    const driverMap = new Map<string, string>();
+    enrichment.drivers.forEach((d) => {
+      driverMap.set(d.id, d.nombre);
+    });
+
+    return (tripsPage.items || []).map((dto: ViajeResponseDto) => {
+      const orderInfo = orderMap.get(dto.pedido_id);
+      const placa = vehicleMap.get(dto.vehiculo_id);
+      const conductorNombre = driverMap.get(dto.conductor_id);
+
+      return viajeMapper.toDomain(dto, {
+        clienteNombre: orderInfo?.clienteNombre,
+        material: orderInfo?.material,
+        volumenM3: orderInfo?.volumenM3,
+        destino: orderInfo?.destino,
+        placa,
+        conductorNombre,
+      });
+    });
+  },
+
+  async assignTrip(pedidoId: string, vehiculoId: string, conductorId: string): Promise<string> {
+    const payload = viajeMapper.toCreateDto(pedidoId, vehiculoId, conductorId);
+    const res = await apiClient.post<ViajeResponseDto>('/viajes', payload);
+    return res.id;
   },
 
   async getAvailableDispatchResources(): Promise<DispatchResources> {
@@ -242,7 +235,31 @@ export const tripsService = {
         }
 
         if (data) {
-          trip = mapTripRow(data as TripRow);
+          const t = data as unknown as SupabaseTripRow;
+          const p = Array.isArray(t.pedidos) ? t.pedidos[0] : t.pedidos;
+          const v = Array.isArray(t.vehiculos) ? t.vehiculos[0] : t.vehiculos;
+          const clienteNombre = Array.isArray(p?.usuarios)
+            ? p?.usuarios[0]?.nombre ?? undefined
+            : p?.usuarios?.nombre ?? undefined;
+
+          trip = {
+            id: t.id,
+            pedidoId: t.pedido_id,
+            vehiculoId: t.vehiculo_id,
+            conductorId: t.conductor_id,
+            estado: t.estado,
+            pesoEntradaKg: t.peso_entrada_kg != null ? Number(t.peso_entrada_kg) : undefined,
+            pesoSalidaKg: t.peso_salida_kg != null ? Number(t.peso_salida_kg) : undefined,
+            ticketBalanzaUrl: t.ticket_balanza_url || undefined,
+            fechaAsignacion: t.fecha_asignacion,
+            fechaEntrega: t.fecha_entrega || undefined,
+            material: p?.material ?? undefined,
+            volumenM3: p?.volumen_m3 != null ? Number(p.volumen_m3) : undefined,
+            destino: p?.destino ?? undefined,
+            clienteNombre,
+            placa: v?.placa ?? undefined,
+          };
+
           await offlineDb.cacheActiveTrip(conductorId, trip.id, trip);
         }
       } catch (networkError: unknown) {
@@ -259,6 +276,8 @@ export const tripsService = {
 
     const pendingActions = await offlineDb.getPendingActions();
     const tripActions = pendingActions.filter((action) => action.viajeId === trip.id);
+    const hasBalanzaAction = tripActions.some((action) => action.type === 'REGISTRAR_BALANZA');
+    const localPhoto = hasBalanzaAction ? await offlineDb.getPendingPhoto(trip.id) : null;
 
     for (const action of tripActions) {
       if (action.type === 'INICIAR_VIAJE') {
@@ -270,8 +289,6 @@ export const tripsService = {
         trip.estado = 'EN_BALANZA';
         trip.pesoEntradaKg = action.payload.pesoEntrada;
         trip.pesoSalidaKg = action.payload.pesoSalida;
-
-        const localPhoto = await offlineDb.getPendingPhoto(trip.id);
         trip.ticketBalanzaUrl = localPhoto ? URL.createObjectURL(localPhoto) : undefined;
         continue;
       }
@@ -291,35 +308,7 @@ export const tripsService = {
       return this.updateTripStateOffline(id, estado);
     }
 
-    try {
-      if (estado === 'EN_CAMINO') {
-        const { error } = await supabase.rpc('iniciar_viaje', { p_viaje_id: id });
-        if (error) {
-          throw error;
-        }
-        return;
-      }
-
-      if (estado === 'ENTREGADO') {
-        const { error } = await supabase.rpc('confirmar_entrega', { p_viaje_id: id });
-        if (error) {
-          throw error;
-        }
-        return;
-      }
-
-      const { error } = await supabase
-        .from('viajes')
-        .update({ estado })
-        .eq('id', id);
-
-      if (error) {
-        throw error;
-      }
-    } catch (error: unknown) {
-      console.warn('Error al actualizar estado, aplicando fallback en cola offline:', error);
-      return this.updateTripStateOffline(id, estado);
-    }
+    await apiClient.patch<ViajeResponseDto>(`/viajes/${id}/estado`, { estado });
   },
 
   async updateTripStateOffline(id: string, estado: Viaje['estado']): Promise<void> {
@@ -342,17 +331,11 @@ export const tripsService = {
     pesoSalida: number,
     ticketUrl: string
   ): Promise<void> {
-    const { error } = await supabase.rpc('registrar_ticket_balanza', {
-      p_viaje_id: viajeId,
-      p_peso_entrada: pesoEntrada,
-      p_peso_salida: pesoSalida,
-      p_ticket_url: ticketUrl,
+    await apiClient.post<ViajeResponseDto>(`/viajes/${viajeId}/balanza`, {
+      peso_entrada_kg: pesoEntrada,
+      peso_salida_kg: pesoSalida,
+      ticket_balanza_url: ticketUrl,
     });
-
-    if (error) {
-      console.error('Error en RPC registrar_ticket_balanza:', error);
-      throw error;
-    }
   },
 
   async registerWeighingOffline(
@@ -369,22 +352,7 @@ export const tripsService = {
   },
 
   async completeDelivery(viajeId: string): Promise<void> {
-    if (!navigator.onLine) {
-      return this.completeDeliveryOffline(viajeId);
-    }
-
-    try {
-      const { error } = await supabase.rpc('confirmar_entrega', {
-        p_viaje_id: viajeId,
-      });
-
-      if (error) {
-        throw error;
-      }
-    } catch (error: unknown) {
-      console.warn('Error de red al confirmar entrega, guardando en cola offline:', error);
-      return this.completeDeliveryOffline(viajeId);
-    }
+    return this.updateTripState(viajeId, 'ENTREGADO');
   },
 
   async completeDeliveryOffline(viajeId: string): Promise<void> {

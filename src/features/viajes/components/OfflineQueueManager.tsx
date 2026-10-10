@@ -9,7 +9,6 @@ import { offlineDb } from '../../../shared/services/offlineDb';
 import type { OfflineAction } from '../../../shared/types';
 import { tripsService } from '../../../shared/services/tripsService';
 import { storageService } from '../../../shared/services/storageService';
-import { supabase } from '../../../shared/services/supabase';
 import { getErrorMessage } from '../../../shared/utils/errors';
 
 interface OfflineQueueManagerProps {
@@ -31,17 +30,6 @@ export function OfflineQueueManager({ onSyncSuccess }: OfflineQueueManagerProps)
     }
   }, []);
 
-  const supabaseForceStateUpdate = useCallback(async (id: string, estado: 'EN_CAMINO' | 'ENTREGADO') => {
-    const { error: supabaseError } = await supabase
-      .from('viajes')
-      .update({ estado })
-      .eq('id', id);
-
-    if (supabaseError) {
-      throw supabaseError;
-    }
-  }, []);
-
   const handleSincronizar = useCallback(async () => {
     if (!navigator.onLine || syncing) {
       return;
@@ -53,9 +41,12 @@ export function OfflineQueueManager({ onSyncSuccess }: OfflineQueueManagerProps)
     try {
       const actions = await offlineDb.getPendingActions();
 
-      for (const action of actions) {
+      const processSequentially = async (index: number): Promise<void> => {
+        if (index >= actions.length) return;
+        const action = actions[index];
+
         if (action.type === 'INICIAR_VIAJE') {
-          await supabaseForceStateUpdate(action.viajeId, 'EN_CAMINO');
+          await tripsService.updateTripState(action.viajeId, 'EN_CAMINO');
         } else if (action.type === 'REGISTRAR_BALANZA') {
           const photoFile = await offlineDb.getPendingPhoto(action.viajeId);
           if (!photoFile) {
@@ -79,7 +70,11 @@ export function OfflineQueueManager({ onSyncSuccess }: OfflineQueueManagerProps)
         if (action.id !== undefined) {
           await offlineDb.deleteAction(action.id);
         }
-      }
+
+        return processSequentially(index + 1);
+      };
+
+      await processSequentially(0);
 
       await loadQueue();
 
@@ -92,7 +87,7 @@ export function OfflineQueueManager({ onSyncSuccess }: OfflineQueueManagerProps)
     } finally {
       setSyncing(false);
     }
-  }, [loadQueue, onSyncSuccess, supabaseForceStateUpdate, syncing]);
+  }, [loadQueue, onSyncSuccess, syncing]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {

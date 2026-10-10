@@ -26,6 +26,20 @@ export function useDriverTripActions({ trip, onRefresh }: UseDriverTripActionsPr
   const [uploadProgress, setUploadProgress] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const previewUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    previewUrlRef.current = previewUrl;
+  }, [previewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
+
   const { coords, error: gpsError, isTracking, startTracking } = useDriverGeolocation({
     autoStart: trip.estado === 'EN_CAMINO',
   });
@@ -117,8 +131,9 @@ export function useDriverTripActions({ trip, onRefresh }: UseDriverTripActionsPr
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
+    const url = URL.createObjectURL(file);
     setSelectedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    setPreviewUrl(url);
   };
 
   const handleClearPhoto = () => {
