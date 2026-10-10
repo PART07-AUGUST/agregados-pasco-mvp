@@ -5,6 +5,7 @@ const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp']);
 const SIGNED_URL_EXPIRATION_SECONDS = 5 * 60;
+const SIGNED_TICKET_PATH = `/storage/v1/object/sign/${TICKET_BUCKET}/`;
 
 function assertSafePathSegment(value: string, label: string): void {
   if (!/^[A-Za-z0-9_-]+$/.test(value)) {
@@ -133,6 +134,18 @@ export const storageService = {
     if (error || !data?.signedUrl) {
       console.error('Error al generar URL firmada del ticket:', error);
       throw new Error('No se pudo generar un enlace temporal para el ticket.');
+    }
+
+    let isValidSignedUrl = false;
+    try {
+      const signedUrl = new URL(data.signedUrl);
+      isValidSignedUrl = signedUrl.protocol === 'https:' && signedUrl.pathname.includes(SIGNED_TICKET_PATH);
+    } catch (validationError) {
+      console.error('URL firmada de ticket inválida:', validationError);
+    }
+
+    if (!isValidSignedUrl) {
+      throw new Error('No se pudo validar el enlace temporal del ticket.');
     }
 
     return data.signedUrl;

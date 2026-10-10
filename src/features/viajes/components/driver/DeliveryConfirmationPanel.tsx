@@ -28,18 +28,10 @@ export function DeliveryConfirmationPanel({
     setOpeningTicket(true);
     setTicketError(null);
 
-    // Abrir la pestaña antes de la operación asíncrona evita que el navegador la bloquee.
-    const ticketWindow = window.open('about:blank', '_blank', 'noopener,noreferrer');
-
     try {
       const signedUrl = await storageService.createTicketSignedUrl(ticketBalanzaReference);
-      if (ticketWindow) {
-        ticketWindow.location.href = signedUrl;
-      } else {
-        window.location.assign(signedUrl);
-      }
+      window.open(signedUrl, '_blank', 'noopener,noreferrer');
     } catch {
-      ticketWindow?.close();
       setTicketError('No se pudo abrir el ticket. Verifica tu sesión e inténtalo nuevamente.');
     } finally {
       setOpeningTicket(false);
