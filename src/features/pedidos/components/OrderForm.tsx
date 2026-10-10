@@ -51,6 +51,7 @@ const MATERIAL_OPTIONS: Array<{ value: Pedido['material']; label: string }> = [
   { value: 'TIERRA_CHACRA', label: 'Tierra de Chacra' }
 ];
 
+// react-doctor-disable-next-line no-high-complexity-react-function, no-giant-component
 export function OrderForm({
   onSuccess,
   onCancel,
@@ -265,7 +266,7 @@ export function OrderForm({
               href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-3 rounded-xl bg-emerald-500 text-slate-950 font-bold hover:bg-emerald-400 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+              className="w-full py-3 rounded-xl bg-emerald-500 text-slate-950 font-bold hover:bg-emerald-400 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
             >
               <MessageSquare className="h-4 w-4" />
               <span>Enviar Comprobante por WhatsApp</span>
@@ -276,7 +277,7 @@ export function OrderForm({
           <button
             type="button"
             onClick={onSuccess}
-            className="w-full py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 font-semibold hover:text-white transition-all cursor-pointer"
+            className="w-full py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 font-semibold hover:text-white transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer"
           >
             Volver al Panel Principal
           </button>
@@ -292,7 +293,7 @@ export function OrderForm({
           type="button"
           onClick={onCancel}
           aria-label="Cerrar formulario de pedido"
-          className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-slate-400 hover:text-white active:scale-95 transition-all cursor-pointer"
+          className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-slate-400 hover:text-white active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer"
         >
           <X className="h-4 w-4" />
         </button>
@@ -347,7 +348,7 @@ export function OrderForm({
             {/* SECCIÓN MULTI-MATERIAL: Permite llevar uno o más materiales para la misma obra */}
             <div className="space-y-2.5">
               <div className="flex justify-between items-center">
-                <label className="font-semibold text-slate-400">Material(es) de Agregado *</label>
+                <div className="font-semibold text-slate-400">Material(es) de Agregado *</div>
                 {totalVolumenM3 > 0 && (
                   <span className="text-[11px] text-amber-400 font-mono font-bold flex items-center gap-1">
                     <Truck className="h-3.5 w-3.5 text-amber-500" />
@@ -412,7 +413,7 @@ export function OrderForm({
               <button
                 type="button"
                 onClick={handleAddItem}
-                className="w-full py-2 bg-slate-950 hover:bg-slate-900 border border-dashed border-slate-800 hover:border-amber-500/40 text-slate-400 hover:text-amber-400 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer text-xs"
+                className="w-full py-2 bg-slate-950 hover:bg-slate-900 border border-dashed border-slate-800 hover:border-amber-500/40 text-slate-400 hover:text-amber-400 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer text-xs"
               >
                 <Plus className="h-3.5 w-3.5 text-amber-500" />
                 <span>+ Agregar otro material (Arena, Piedra, Afirmado...)</span>
@@ -439,7 +440,7 @@ export function OrderForm({
                   type="button"
                   onClick={() => setIsFreightModalOpen(true)}
                   aria-label="Simular flete y ruta en mapa satelital"
-                  className="px-3 py-2.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/50 text-amber-400 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all text-xs font-semibold shrink-0"
+                  className="px-3 py-2.5 bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/50 text-amber-400 rounded-xl flex items-center gap-1.5 cursor-pointer transition-[color,background-color,border-color,opacity,transform,box-shadow] text-xs font-semibold shrink-0"
                   title="Simular flete y ruta en mapa satelital"
                 >
                   <MapPin className="h-4 w-4 text-amber-500" />
@@ -481,14 +482,14 @@ export function OrderForm({
               <button
                 type="button"
                 onClick={onCancel}
-                className="flex-1 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 font-semibold hover:bg-slate-900 active:scale-95 transition-all cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 font-semibold hover:bg-slate-900 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 py-2.5 rounded-xl bg-amber-500 text-amber-950 font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/10 cursor-pointer flex items-center justify-center gap-1"
+                className="flex-1 py-2.5 rounded-xl bg-amber-500 text-amber-950 font-bold hover:bg-amber-600 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] shadow-md shadow-amber-500/10 cursor-pointer flex items-center justify-center gap-1"
               >
                 <Save className="h-3.5 w-3.5" />
                 <span>{loading ? 'Procesando...' : (items.length > 1 ? `Guardar ${items.length} Pedidos` : 'Guardar Pedido')}</span>

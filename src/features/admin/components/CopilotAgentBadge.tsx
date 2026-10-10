@@ -1,12 +1,12 @@
 import type { AgentRole } from '../agents/types';
-import { AGENT_VISUAL_META } from './agentVisualMeta';
+import { AGENT_VISUAL_META, DEFAULT_AGENT_VISUAL_META } from './agentVisualMeta';
 
 interface CopilotAgentBadgeProps {
   agente: AgentRole;
 }
 
 export function CopilotAgentBadge({ agente }: CopilotAgentBadgeProps) {
-  const meta = AGENT_VISUAL_META[agente];
+  const meta = AGENT_VISUAL_META[agente] ?? DEFAULT_AGENT_VISUAL_META;
   const Icono = meta.icono;
 
   return (

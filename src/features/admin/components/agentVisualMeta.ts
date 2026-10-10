@@ -8,6 +8,13 @@ export interface AgentVisualMeta {
   claseIcono: string;
 }
 
+export const DEFAULT_AGENT_VISUAL_META: AgentVisualMeta = {
+  etiqueta: 'Agente',
+  icono: Bot,
+  claseBadge: 'bg-slate-500/15 text-slate-300 border-slate-500/30',
+  claseIcono: 'bg-slate-500/15 text-slate-400 border-slate-500/30',
+};
+
 export const AGENT_VISUAL_META: Record<AgentRole, AgentVisualMeta> = {
   AUDITOR_ML: {
     etiqueta: 'Auditor ML',

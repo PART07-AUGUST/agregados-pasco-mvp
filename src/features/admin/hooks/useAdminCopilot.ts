@@ -53,11 +53,7 @@ export function useAdminCopilot() {
       setIsGenerating(true);
 
       try {
-        const presupuesto = copilotRateLimiter.isRateLimitActive()
-          ? copilotRateLimiter.getRemainingQuota()
-          : Number.POSITIVE_INFINITY;
-
-        const resultado = await copilotOrchestrator.processQuery(prompt, historial, agenteForzado, presupuesto);
+        const resultado = await copilotOrchestrator.processQuery(prompt, historial, agenteForzado);
 
         copilotRateLimiter.recordRequests(resultado.llamadasLLM);
         setRemainingQuota(copilotRateLimiter.getRemainingQuota());

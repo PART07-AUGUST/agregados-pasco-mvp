@@ -49,7 +49,7 @@ export function DeliveryConfirmationPanel({
             href={ticketBalanzaUrl}
             target="_blank"
             rel="noreferrer"
-            className="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 hover:bg-slate-800 text-[10px] text-amber-400 font-bold transition-all flex items-center gap-1 cursor-pointer"
+            className="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 hover:bg-slate-800 text-[10px] text-amber-400 font-bold transition-[color,background-color,border-color,opacity,transform,box-shadow] flex items-center gap-1 cursor-pointer"
           >
             <Eye className="h-3 w-3" /> Ver Foto
           </a>
@@ -63,7 +63,7 @@ export function DeliveryConfirmationPanel({
       <button
         onClick={onConfirmDelivery}
         disabled={loading}
-        className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-600/35 text-slate-950 font-extrabold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-emerald-500/5 cursor-pointer"
+        className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-600/35 text-slate-950 font-extrabold text-sm rounded-2xl flex items-center justify-center gap-2 transition-[color,background-color,border-color,opacity,transform,box-shadow] active:scale-95 shadow-md shadow-emerald-500/5 cursor-pointer"
       >
         {loading ? <Loader2 className="h-4 w-4 animate-spin text-slate-950" /> : <CheckCircle2 className="h-4 w-4" />}
         <span>CONFIRMAR ENTREGA EN OBRA</span>

@@ -115,7 +115,7 @@ export function DriverForm({
           type="button"
           onClick={onCancel}
           aria-label="Cerrar formulario de conductor"
-          className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-slate-400 hover:text-white active:scale-95 transition-all cursor-pointer"
+          className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-slate-400 hover:text-white active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer"
         >
           <X className="h-4 w-4" />
         </button>
@@ -295,14 +295,14 @@ export function DriverForm({
               <button 
                 type="button" 
                 onClick={onCancel}
-                className="flex-1 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 font-semibold hover:bg-slate-900 active:scale-95 transition-all cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 font-semibold hover:bg-slate-900 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer"
               >
                 Cancelar
               </button>
               <button 
                 type="submit" 
                 disabled={loading}
-                className="flex-1 py-2.5 rounded-xl bg-amber-500 text-amber-950 font-bold hover:bg-amber-600 active:scale-95 disabled:opacity-50 transition-all shadow-md shadow-amber-500/10 cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 rounded-xl bg-amber-500 text-amber-950 font-bold hover:bg-amber-600 active:scale-95 disabled:opacity-50 transition-[color,background-color,border-color,opacity,transform,box-shadow] shadow-md shadow-amber-500/10 cursor-pointer flex items-center justify-center gap-1.5"
               >
                 {loading ? (
                   <>

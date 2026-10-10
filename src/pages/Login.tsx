@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Truck } from 'lucide-react';
 import { useAuthStore } from '../shared/stores/useAuthStore';
 import { LoginForm } from '../features/auth/components/LoginForm';
+import { AuthBrandHeader } from '../features/auth/components/AuthBrandHeader';
 
 export function Login() {
   const navigate = useNavigate();
@@ -37,20 +37,7 @@ export function Login() {
 
       <div className="relative z-10 w-full max-w-md flex flex-col space-y-6">
         
-        {/* Cabecera / Logo corporativo */}
-        <div className="flex flex-col items-center space-y-3">
-          <Link to="/" className="flex items-center space-x-2.5 group cursor-pointer">
-            <div className="p-2 bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 rounded-xl shadow-lg shadow-amber-500/10 group-hover:scale-105 transition-transform">
-              <Truck className="h-6 w-6" />
-            </div>
-            <div className="text-left">
-              <span className="text-[10px] font-bold text-amber-500 tracking-widest uppercase">Cerro de Pasco</span>
-              <h1 className="text-lg font-extrabold tracking-tight text-white leading-none">
-                AGREGADOS <span className="text-slate-400 font-light">SIS</span>
-              </h1>
-            </div>
-          </Link>
-        </div>
+        <AuthBrandHeader />
 
         {/* Formulario */}
         <LoginForm />

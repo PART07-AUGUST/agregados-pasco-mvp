@@ -72,11 +72,12 @@ export function ForcePasswordChangeModal() {
   };
 
   return (
-    <div
-      role="dialog"
+    <dialog
+      open
       aria-modal="true"
       aria-labelledby="password-change-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in"
+      onCancel={(event) => event.preventDefault()}
     >
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl shadow-amber-500/5 p-6 sm:p-8 space-y-6">
         {/* Header con icono y advertencia de seguridad */}
@@ -186,7 +187,7 @@ export function ForcePasswordChangeModal() {
             <button
               type="submit"
               disabled={!allRequirementsMet || loading}
-              className="w-full py-3 px-4 rounded-2xl font-bold text-xs uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-lg shadow-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 rounded-2xl font-bold text-xs uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-lg shadow-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-[color,background-color,border-color,opacity,transform,box-shadow] flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -218,7 +219,7 @@ export function ForcePasswordChangeModal() {
           <span>Políticas de Control de Acceso Criptográfico SIS-AGREGADOS</span>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }
 export default ForcePasswordChangeModal;

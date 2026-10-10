@@ -31,7 +31,7 @@ export function Unauthorized() {
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <button 
             onClick={() => navigate(-1)}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 font-semibold hover:bg-slate-900 active:scale-95 transition-all text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            className="flex-1 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 font-semibold hover:bg-slate-900 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] text-xs flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             <span>Volver Atrás</span>
@@ -39,7 +39,7 @@ export function Unauthorized() {
           
           <button 
             onClick={() => navigate('/', { replace: true })}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-600 active:scale-95 transition-all text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            className="flex-1 px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-600 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] text-xs flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <Home className="h-3.5 w-3.5" />
             <span>Página de Inicio</span>

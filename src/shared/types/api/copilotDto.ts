@@ -1,4 +1,12 @@
-import type { AgentRole, ReActTraceStep } from '../../../features/admin/agents/types';
+import type { AgentRole } from '../../../features/admin/agents/types';
+
+export interface TrazaCopilotApiDto {
+  paso: number;
+  pensamiento: string;
+  herramienta: string;
+  parametros: Record<string, unknown>;
+  resultado: unknown;
+}
 
 export interface TurnoConversacionDto {
   rol: 'user' | 'model' | 'assistant';
@@ -16,7 +24,7 @@ export interface ConsultaCopilotResponseDto {
   rol: AgentRole;
   nombre_agente: string;
   respuesta: string;
-  trazas: ReActTraceStep[];
+  trazas: TrazaCopilotApiDto[];
   llamadas_llm: number;
   creado_en: string;
 }

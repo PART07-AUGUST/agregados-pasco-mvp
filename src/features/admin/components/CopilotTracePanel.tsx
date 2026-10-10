@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { ChevronDown, CheckCircle2, AlertTriangle, Search } from 'lucide-react';
 import type { ReActTraceStep } from '../agents/types';
-import { AGENT_VISUAL_META } from './agentVisualMeta';
+import { AGENT_VISUAL_META, DEFAULT_AGENT_VISUAL_META } from './agentVisualMeta';
 
 interface CopilotTracePanelProps {
   trazas: ReActTraceStep[];
 }
 
-const formatearParametros = (parametros: Record<string, unknown>): string => {
-  const entradas = Object.entries(parametros);
+const formatearParametros = (parametros?: Record<string, unknown>): string => {
+  const entradas = Object.entries(parametros ?? {});
   if (entradas.length === 0) {
     return 'sin parámetros';
   }
@@ -16,9 +16,12 @@ const formatearParametros = (parametros: Record<string, unknown>): string => {
 };
 
 function TraceStepItem({ traza }: { traza: ReActTraceStep }) {
-  const meta = AGENT_VISUAL_META[traza.agente];
+  const meta = AGENT_VISUAL_META[traza.agente] ?? DEFAULT_AGENT_VISUAL_META;
   const exitoso = traza.estado === 'EXITOSO';
   const IconoEstado = exitoso ? CheckCircle2 : AlertTriangle;
+  const herramienta = traza.herramientaInvocada || 'herramienta_desconocida';
+  const pensamiento = traza.pensamiento || 'Sin pensamiento disponible.';
+  const observacion = traza.observacionResumida || 'Sin observación disponible.';
 
   return (
     <li className="p-2 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
@@ -33,15 +36,15 @@ function TraceStepItem({ traza }: { traza: ReActTraceStep }) {
       </div>
       <p className="text-[10px] text-slate-300">
         <span className="text-slate-500 font-semibold">Pensamiento: </span>
-        {traza.pensamiento}
+        {pensamiento}
       </p>
       <p className="text-[10px] text-slate-300 font-mono">
         <span className="text-slate-500 font-semibold font-sans">Acción: </span>
-        {traza.herramientaInvocada}({formatearParametros(traza.parametrosValidados)})
+        {herramienta}({formatearParametros(traza.parametrosValidados)})
       </p>
       <p className="text-[10px] text-slate-300">
         <span className="text-slate-500 font-semibold">Observación: </span>
-        {traza.observacionResumida}
+        {observacion}
       </p>
     </li>
   );
@@ -70,7 +73,7 @@ export function CopilotTracePanel({ trazas }: CopilotTracePanelProps) {
       {abierto && (
         <ol className="mt-2 space-y-1.5">
           {trazas.map((traza) => (
-            <TraceStepItem key={`${traza.paso}-${traza.herramientaInvocada}`} traza={traza} />
+            <TraceStepItem key={`${traza.paso}-${traza.herramientaInvocada || 'herramienta'}`} traza={traza} />
           ))}
         </ol>
       )}

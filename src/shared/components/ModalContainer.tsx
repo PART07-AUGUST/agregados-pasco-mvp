@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useEffectEvent, useId, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 
 export interface ModalContainerProps {
@@ -28,33 +28,36 @@ export function ModalContainer({
   maxWidth = 'md',
   children,
 }: ModalContainerProps) {
+  const titleId = useId();
+  const handleClose = useEffectEvent(onClose);
+
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        handleClose();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const widthClass = MAX_WIDTH_MAP[maxWidth] || 'max-w-md';
 
   return (
-    <div
-      role="dialog"
+    <dialog
+      open
       aria-modal="true"
-      aria-label={title}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150 overflow-y-auto"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
+      aria-labelledby={title ? titleId : undefined}
+      aria-label={title ? undefined : 'Ventana modal'}
+      className="fixed inset-0 z-50 m-0 flex h-full w-full max-h-none max-w-none items-center justify-center overflow-y-auto bg-slate-950/80 p-3 backdrop-blur-sm sm:p-4"
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
       }}
     >
       <div
@@ -64,7 +67,7 @@ export function ModalContainer({
           type="button"
           onClick={onClose}
           aria-label="Cerrar ventana modal"
-          className="absolute top-4 right-4 sm:top-5 sm:right-5 p-1.5 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-white active:scale-95 transition-all cursor-pointer"
+          className="absolute top-4 right-4 sm:top-5 sm:right-5 p-1.5 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-white active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer"
         >
           <X className="h-4 w-4" />
         </button>
@@ -78,7 +81,7 @@ export function ModalContainer({
             )}
             <div>
               {title && (
-                <h4 className="text-sm font-bold text-white uppercase tracking-wider">
+                <h4 id={titleId} className="text-sm font-bold text-white uppercase tracking-wider">
                   {title}
                 </h4>
               )}
@@ -93,7 +96,7 @@ export function ModalContainer({
 
         {children}
       </div>
-    </div>
+    </dialog>
   );
 }
 

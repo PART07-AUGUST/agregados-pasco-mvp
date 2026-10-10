@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Truck,
@@ -18,6 +18,20 @@ import { OfflineQueueManager } from '../features/viajes/components/OfflineQueueM
 import { supabase } from '../shared/services/supabase';
 import { getErrorMessage } from '../shared/utils/errors';
 
+function subscribeToOnlineStatus(callback: () => void) {
+  window.addEventListener('online', callback);
+  window.addEventListener('offline', callback);
+
+  return () => {
+    window.removeEventListener('online', callback);
+    window.removeEventListener('offline', callback);
+  };
+}
+
+function getOnlineStatus() {
+  return typeof navigator === 'undefined' ? true : navigator.onLine;
+}
+
 export function DriverDashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
@@ -27,18 +41,7 @@ export function DriverDashboard() {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
-
-  useEffect(() => {
-    const handleConnectionChange = () => setIsOnline(navigator.onLine);
-    window.addEventListener('online', handleConnectionChange);
-    window.addEventListener('offline', handleConnectionChange);
-
-    return () => {
-      window.removeEventListener('online', handleConnectionChange);
-      window.removeEventListener('offline', handleConnectionChange);
-    };
-  }, []);
+  const isOnline = useSyncExternalStore(subscribeToOnlineStatus, getOnlineStatus, () => true);
 
   useEffect(() => {
     if (!user?.id) {
@@ -98,10 +101,8 @@ export function DriverDashboard() {
         console.error('Error al cargar datos del conductor:', loadError);
         setError(getErrorMessage(loadError, 'Error al sincronizar datos del servidor de Agregados SIS.'));
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-          setRefreshing(false);
-        }
+        setLoading(false);
+        setRefreshing(false);
       }
     };
 
@@ -172,7 +173,7 @@ export function DriverDashboard() {
           <button
             onClick={() => void refreshDriverData(true)}
             disabled={loading || refreshing}
-            className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+            className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer flex items-center justify-center"
             title="Refrescar datos"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin text-amber-500' : ''}`} />
@@ -180,7 +181,7 @@ export function DriverDashboard() {
 
           <button
             onClick={handleLogout}
-            className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-rose-450 hover:bg-rose-500/10 active:scale-95 transition-all cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+            className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-rose-450 hover:bg-rose-500/10 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer flex items-center gap-1 text-[11px] font-bold"
           >
             <LogOut className="h-3.5 w-3.5" />
             <span>Salir</span>
@@ -251,7 +252,7 @@ export function DriverDashboard() {
             <p className="text-xs text-rose-400 font-semibold">{error}</p>
             <button
               onClick={() => void refreshDriverData()}
-              className="px-4 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-xs text-amber-400 font-bold rounded-xl transition-all cursor-pointer"
+              className="px-4 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-xs text-amber-400 font-bold rounded-xl transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer"
             >
               Reintentar Conexión
             </button>
@@ -271,7 +272,7 @@ export function DriverDashboard() {
             </div>
             <button
               onClick={() => void refreshDriverData(true)}
-              className="px-4 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-xs text-amber-400 font-extrabold rounded-xl transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-xs text-amber-400 font-extrabold rounded-xl transition-[color,background-color,border-color,opacity,transform,box-shadow] active:scale-95 flex items-center gap-1.5 cursor-pointer"
             >
               <RefreshCw className="h-3 w-3" />
               <span>Verificar Nuevos Despachos</span>
