@@ -38,9 +38,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   const token = await getAuthToken();
-  if (token && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${token}`);
+  if (!token) {
+    throw new ApiError(401, 'Sesión no válida. Inicia sesión nuevamente.');
   }
+  headers.set('Authorization', `Bearer ${token}`);
 
   let response: Response;
   try {

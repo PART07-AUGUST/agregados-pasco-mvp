@@ -53,13 +53,13 @@ export function OfflineQueueManager({ onSyncSuccess }: OfflineQueueManagerProps)
             throw new Error(`Falta el ticket de pesaje físico para el viaje ${action.viajeId}.`);
           }
 
-          const publicUrl = await storageService.uploadTicketImage(photoFile);
+          const ticketPath = await storageService.uploadTicketImage(photoFile, action.viajeId);
 
           await tripsService.registerWeighing(
             action.viajeId,
             action.payload.pesoEntrada,
             action.payload.pesoSalida,
-            publicUrl
+            ticketPath
           );
 
           await offlineDb.deletePendingPhoto(action.viajeId);

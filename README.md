@@ -247,7 +247,7 @@ La plataforma aplica el principio de **Defensa en Profundidad** (*Defense in Dep
 3. **Hardening de Supabase Storage (`tickets-balanza`)**:
    - RLS en `storage.objects` restringido para subidas exclusivamente a `CONDUCTOR` y `ADMINISTRADOR`.
    - Validación de tipos MIME autorizados (`image/jpeg`, `image/png`, `image/webp`) y límite estricto de 5 MB por archivo.
-   - Protección contra listado masivo (`public_bucket_allows_listing`): el listado de archivos está reservado a Administradores, manteniendo las URLs de descarga públicas operativas.
+   - Protección contra listado masivo (`public_bucket_allows_listing`): el listado de archivos está reservado a Administradores. El frontend guarda rutas internas y solicita URLs firmadas temporales al visualizar un ticket; el bucket público se mantiene activo solo durante la transición.
 4. **Principio de Menor Privilegio (Least Privilege) en RPCs**:
    - Blindaje de `SET search_path = public, auth, pg_temp;` en todas las funciones con privilegios elevados (`SECURITY DEFINER`).
    - Revocación de `EXECUTE` a usuarios anónimos (`anon` y `PUBLIC`) en todas las funciones de negocio e internas de trigger.
@@ -296,7 +296,7 @@ VITE_SUPABASE_ANON_KEY=tu-anon-key
 # Google Maps Platform (Mapas interactivos)
 VITE_GOOGLE_MAPS_API_KEY=tu-google-maps-api-key
 
-# GraphHopper Routing API (Cálculo de distancias viales por carretera)
+# GraphHopper Routing API (Cálculo de distancias viales por carretera; restringir por dominio Vercel)
 VITE_GRAPHHOPPER_API_KEY=tu-graphhopper-api-key
 
 # Google Gemini API (Copiloto Operativo de IA Multiagente)
@@ -354,6 +354,8 @@ flowchart LR
 3. **Configurar Almacenamiento (Supabase Storage)**:
    - Ve a **Storage** en la barra lateral.
    - Verifica que el bucket `tickets-balanza` exista y esté marcado como **Public bucket** (las políticas RLS aplicadas por las migraciones restringen la subida exclusivamente a choferes y administradores autorizados).
+   - Configura los tipos MIME permitidos únicamente como `image/jpeg`, `image/png` y `image/webp`.
+   - Mantén **Public bucket** activo hasta validar la policy `SELECT` para URLs firmadas y completar las pruebas de descarga. Después podrá desactivarse sin cambiar el frontend.
 
 4. **Configurar Autenticación (Auth)**:
    - Ve a **Authentication** > **URL Configuration**:

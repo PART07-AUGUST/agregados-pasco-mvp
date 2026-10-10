@@ -177,9 +177,9 @@ export function useDriverTripActions({ trip, onRefresh }: UseDriverTripActionsPr
         await tripsService.registerWeighingOffline(trip.id, pesoEntradaKg, pesoSalidaKg, selectedFile);
       } else {
         setUploadProgress(true);
-        const ticketUrl = await storageService.uploadTicketImage(selectedFile);
+        const ticketPath = await storageService.uploadTicketImage(selectedFile, trip.id);
         setUploadProgress(false);
-        await tripsService.registerWeighing(trip.id, pesoEntradaKg, pesoSalidaKg, ticketUrl);
+        await tripsService.registerWeighing(trip.id, pesoEntradaKg, pesoSalidaKg, ticketPath);
       }
 
       setPesoEntrada('');
