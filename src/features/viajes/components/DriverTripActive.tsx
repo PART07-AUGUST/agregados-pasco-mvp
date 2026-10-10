@@ -124,7 +124,7 @@ export function DriverTripActive({ trip, onRefresh }: DriverTripActiveProps) {
           pesoEntradaDbTon={pesoEntradaDbTon}
           pesoSalidaDbTon={pesoSalidaDbTon}
           pesoNetoDbTon={pesoNetoDbTon}
-          ticketBalanzaUrl={trip.ticketBalanzaUrl}
+          ticketBalanzaReference={trip.ticketBalanzaUrl}
           loading={loading}
           onConfirmDelivery={() => void handleConfirmDelivery()}
         />

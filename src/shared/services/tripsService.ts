@@ -329,12 +329,12 @@ export const tripsService = {
     viajeId: string,
     pesoEntrada: number,
     pesoSalida: number,
-    ticketUrl: string
+    ticketPath: string
   ): Promise<void> {
     await apiClient.post<ViajeResponseDto>(`/viajes/${viajeId}/balanza`, {
       peso_entrada_kg: pesoEntrada,
       peso_salida_kg: pesoSalida,
-      ticket_balanza_url: ticketUrl,
+      ticket_balanza_url: ticketPath,
     });
   },
 
