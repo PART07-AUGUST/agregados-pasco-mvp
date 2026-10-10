@@ -2,11 +2,13 @@ import { supabase } from './supabase';
 import { useAuthStore } from '../stores/useAuthStore';
 import { ApiError } from './apiError';
 
-const DEFAULT_BASE_URL = 'https://agregadospasco.lemonsand-30379335.eastus2.azurecontainerapps.io/api/v1';
-
 const getBaseUrl = (): string => {
   const url = import.meta.env.VITE_API_BASE_URL;
-  if (!url) return DEFAULT_BASE_URL;
+  if (!url) {
+    throw new Error(
+      'Configuración de API ausente: Define la variable VITE_API_BASE_URL en tu entorno (.env.local o Vercel).'
+    );
+  }
   return url.endsWith('/') ? url.slice(0, -1) : url;
 };
 
