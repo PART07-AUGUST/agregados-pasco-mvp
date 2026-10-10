@@ -83,11 +83,6 @@ export function ClientDashboard() {
     navigate('/', { replace: true });
   };
 
-  const handleCancelOrder = async (id: string) => {
-    await ordersService.updateOrderState(id, 'CANCELADO');
-    await refreshData();
-  };
-
   const handleOrderFormSuccess = async () => {
     setShowOrderForm(false);
     setPreloadedOrderData(null);
@@ -147,7 +142,7 @@ export function ClientDashboard() {
             <button
               onClick={() => refreshData()}
               disabled={loading || refreshing}
-              className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+              className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer flex items-center justify-center"
               title="Refrescar datos"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin text-amber-500' : ''}`} />
@@ -155,7 +150,7 @@ export function ClientDashboard() {
 
             <button 
               onClick={handleLogout}
-              className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+              className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer flex items-center gap-1.5 text-xs font-bold"
             >
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Cerrar Sesión</span>
@@ -177,7 +172,7 @@ export function ClientDashboard() {
           <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full md:w-auto">
             <button
               onClick={() => setShowFreightSimulator(true)}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-amber-400 hover:bg-slate-850 hover:border-amber-500/40 active:scale-95 transition-all font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-amber-400 hover:bg-slate-850 hover:border-amber-500/40 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
               title="Simular rutas de canteras, fletes y cotizar materiales"
             >
               <Compass className="h-4 w-4 text-amber-500" />
@@ -188,7 +183,7 @@ export function ClientDashboard() {
               href="https://wa.me/51958292145"
               target="_blank"
               rel="noreferrer"
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-850 active:scale-95 transition-all font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-850 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <MessageSquare className="h-4 w-4 text-emerald-500" />
               <span>Soporte</span>
@@ -199,7 +194,7 @@ export function ClientDashboard() {
                 setPreloadedOrderData(null);
                 setShowOrderForm(true);
               }}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/10 flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] shadow-md shadow-amber-500/10 flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               <span>Solicitar Agregado</span>
@@ -255,7 +250,6 @@ export function ClientDashboard() {
           <OrdersList 
             orders={orders}
             onAssignClick={() => {}} // Vacío ya que no somos admin
-            onCancelOrder={handleCancelOrder}
             isAdmin={false}
           />
         )}

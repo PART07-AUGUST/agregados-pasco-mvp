@@ -94,7 +94,7 @@ export function DriverTripActive({ trip, onRefresh }: DriverTripActiveProps) {
           <button
             onClick={() => void handleStartTrip()}
             disabled={loading}
-            className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-600/35 text-slate-950 font-extrabold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-amber-500/5 cursor-pointer"
+            className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-600/35 text-slate-950 font-extrabold text-sm rounded-2xl flex items-center justify-center gap-2 transition-[color,background-color,border-color,opacity,transform,box-shadow] active:scale-95 shadow-md shadow-amber-500/5 cursor-pointer"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin text-slate-950" /> : <Truck className="h-4 w-4" />}
             <span>INICIAR VIAJE (SALIDA)</span>

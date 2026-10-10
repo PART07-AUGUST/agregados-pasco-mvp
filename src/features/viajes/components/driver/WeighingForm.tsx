@@ -76,11 +76,12 @@ export function WeighingForm({
         </div>
 
         <div className="space-y-2">
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+          <label htmlFor="input-comprobante-peso" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             Foto del Ticket Físico
           </label>
 
-          <input
+            <input
+              id="input-comprobante-peso"
             type="file"
             accept="image/*"
             capture="environment"
@@ -93,7 +94,7 @@ export function WeighingForm({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full py-6 border-2 border-dashed border-slate-800 hover:border-indigo-500 rounded-2xl bg-slate-950/40 flex flex-col items-center justify-center gap-2 group transition-all text-slate-400 hover:text-indigo-400 cursor-pointer"
+              className="w-full py-6 border-2 border-dashed border-slate-800 hover:border-indigo-500 rounded-2xl bg-slate-950/40 flex flex-col items-center justify-center gap-2 group transition-[color,background-color,border-color,opacity,transform,box-shadow] text-slate-400 hover:text-indigo-400 cursor-pointer"
             >
               <div className="p-2 bg-slate-900 rounded-full border border-slate-850 group-hover:bg-indigo-500/10">
                 <Camera className="h-5 w-5 text-slate-400 group-hover:text-indigo-400" />
@@ -121,7 +122,7 @@ export function WeighingForm({
               <button
                 type="button"
                 onClick={onClearPhoto}
-                className="p-1.5 bg-slate-900 border border-slate-800 rounded-lg text-rose-400 hover:bg-rose-500/15 transition-all cursor-pointer mr-1"
+                className="p-1.5 bg-slate-900 border border-slate-800 rounded-lg text-rose-400 hover:bg-rose-500/15 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer mr-1"
               >
                 Cambiar
               </button>
@@ -132,7 +133,7 @@ export function WeighingForm({
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3.5 bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-600/35 text-white font-extrabold text-sm rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md shadow-indigo-500/5 cursor-pointer mt-2"
+          className="w-full py-3.5 bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-600/35 text-white font-extrabold text-sm rounded-2xl flex items-center justify-center gap-2 transition-[color,background-color,border-color,opacity,transform,box-shadow] active:scale-95 shadow-md shadow-indigo-500/5 cursor-pointer mt-2"
         >
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />

@@ -1,20 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  User,
-  Mail,
-  Lock,
-  ArrowRight,
-  Loader2,
-  AlertCircle,
-  ShieldCheck,
-  Phone,
-  CreditCard,
-  Eye,
-  EyeOff
-} from 'lucide-react';
+import { AlertCircle, ShieldCheck } from 'lucide-react';
 import { supabase } from '../../../shared/services/supabase';
 import { validarDNI, validarCelular } from '../../../shared/validations';
+import { RegisterFields } from './RegisterFields';
 
 export function RegisterForm() {
   const navigate = useNavigate();
@@ -152,191 +141,27 @@ export function RegisterForm() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-
-          {/* Nombres y Apellidos */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-slate-300">Nombres *</label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-3.5 text-slate-500">
-                  <User className="h-4 w-4" />
-                </span>
-                <input
-                  type="text"
-                  value={nombres}
-                  onChange={(e) => setNombres(e.target.value)}
-                  disabled={loading}
-                  placeholder="Ej. Carlos"
-                  className="w-full bg-slate-950/80 border border-slate-800 focus:border-amber-500 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none transition-colors text-white"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-slate-300">Apellidos *</label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-3.5 text-slate-500">
-                  <User className="h-4 w-4" />
-                </span>
-                <input
-                  type="text"
-                  value={apellidos}
-                  onChange={(e) => setApellidos(e.target.value)}
-                  disabled={loading}
-                  placeholder="Ej. Mendoza Castro"
-                  className="w-full bg-slate-950/80 border border-slate-800 focus:border-amber-500 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none transition-colors text-white"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* DNI y Celular */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
-                <label className="text-[11px] font-semibold text-slate-300">DNI *</label>
-                <span className="text-[10px] text-slate-500 font-mono">8 dígitos</span>
-              </div>
-              <div className="relative">
-                <span className="absolute left-3.5 top-3.5 text-slate-500">
-                  <CreditCard className="h-4 w-4" />
-                </span>
-                <input
-                  type="text"
-                  maxLength={8}
-                  value={dni}
-                  onChange={(e) => setDni(e.target.value.replace(/\D/g, ''))}
-                  disabled={loading}
-                  placeholder="74561234"
-                  className="w-full bg-slate-950/80 border border-slate-800 focus:border-amber-500 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none transition-colors text-white font-mono"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
-                <label className="text-[11px] font-semibold text-slate-300">Celular *</label>
-                <span className="text-[10px] text-slate-500 font-mono">9 dígitos</span>
-              </div>
-              <div className="relative">
-                <span className="absolute left-3.5 top-3.5 text-slate-500">
-                  <Phone className="h-4 w-4" />
-                </span>
-                <input
-                  type="text"
-                  maxLength={9}
-                  value={celular}
-                  onChange={(e) => setCelular(e.target.value.replace(/\D/g, ''))}
-                  disabled={loading}
-                  placeholder="963852741"
-                  className="w-full bg-slate-950/80 border border-slate-800 focus:border-amber-500 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none transition-colors text-white font-mono"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Correo Electrónico */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-slate-300">Correo Electrónico *</label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-3.5 text-slate-500">
-                <Mail className="h-4 w-4" />
-              </span>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-                placeholder="ejemplo@correo.com"
-                className="w-full bg-slate-950/80 border border-slate-800 focus:border-amber-500 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none transition-colors text-white"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Contraseña y Confirmación */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-slate-300">Contraseña *</label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-3.5 text-slate-500">
-                  <Lock className="h-4 w-4" />
-                </span>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                  placeholder="Mín. 6 caracteres"
-                  className="w-full bg-slate-950/80 border border-slate-800 focus:border-amber-500 rounded-xl pl-10 pr-10 py-2.5 text-xs outline-none transition-colors text-white"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 cursor-pointer"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-slate-300">Confirmar Contraseña *</label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-3.5 text-slate-500">
-                  <Lock className="h-4 w-4" />
-                </span>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  disabled={loading}
-                  placeholder="Repetir contraseña"
-                  className="w-full bg-slate-950/80 border border-slate-800 focus:border-amber-500 rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none transition-colors text-white"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full py-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer mt-5 ${loading
-              ? 'bg-amber-600/50 cursor-not-allowed text-slate-800'
-              : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20'
-              }`}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Creando Cuenta...</span>
-              </>
-            ) : (
-              <>
-                <span>Crear Cuenta</span>
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
-
-          <div className="text-center pt-2">
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              className="text-slate-400 hover:text-amber-400 font-semibold transition-colors focus:outline-none cursor-pointer"
-            >
-              ¿Ya tienes una cuenta? Inicia sesión aquí
-            </button>
-          </div>
-        </form>
+        <RegisterFields
+          nombres={nombres}
+          apellidos={apellidos}
+          dni={dni}
+          celular={celular}
+          email={email}
+          password={password}
+          confirmPassword={confirmPassword}
+          showPassword={showPassword}
+          loading={loading}
+          setNombres={setNombres}
+          setApellidos={setApellidos}
+          setDni={setDni}
+          setCelular={setCelular}
+          setEmail={setEmail}
+          setPassword={setPassword}
+          setConfirmPassword={setConfirmPassword}
+          setShowPassword={setShowPassword}
+          onSubmit={handleSubmit}
+          onGoToLogin={() => navigate('/login')}
+        />
       </div>
     </div>
   );

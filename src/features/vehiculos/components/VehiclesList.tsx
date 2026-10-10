@@ -1,6 +1,7 @@
 import { Edit2, Trash2, ShieldCheck, AlertCircle } from 'lucide-react';
 import type { VehiculoConConductor } from '../../../shared/services/vehiclesService';
 import { getErrorMessage } from '../../../shared/utils/errors';
+import { ListTableHeader } from '../../../shared/components/ListTableHeader';
 
 interface VehiclesListProps {
   vehicles: VehiculoConConductor[];
@@ -46,16 +47,14 @@ export function VehiclesList({ vehicles, onEdit, onDelete }: VehiclesListProps) 
       ) : (
         <div className="overflow-x-auto text-xs">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-900 text-slate-500 font-bold uppercase tracking-wider text-[10px] bg-slate-950/20">
-                <th className="py-3 px-4">Placa</th>
-                <th className="py-3 px-4">Especificaciones</th>
-                <th className="py-3 px-4">Capacidad</th>
-                <th className="py-3 px-4">Conductor Asignado</th>
-                <th className="py-3 px-4">Estado</th>
-                <th className="py-3 px-4 text-right">Acciones</th>
-              </tr>
-            </thead>
+            <ListTableHeader columns={[
+              { label: 'Placa' },
+              { label: 'Especificaciones' },
+              { label: 'Capacidad' },
+              { label: 'Conductor Asignado' },
+              { label: 'Estado' },
+              { label: 'Acciones', align: 'right' },
+            ]} />
             <tbody className="divide-y divide-slate-900/60">
               {vehicles.map((v) => (
                 <tr key={v.id} className="hover:bg-slate-900/10 transition-colors">
@@ -97,14 +96,14 @@ export function VehiclesList({ vehicles, onEdit, onDelete }: VehiclesListProps) 
                     <div className="flex items-center justify-end space-x-2">
                       <button 
                         onClick={() => onEdit(v)}
-                        className="p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-slate-400 hover:text-white active:scale-95 transition-all cursor-pointer"
+                        className="p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-slate-400 hover:text-white active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer"
                         title="Editar vehículo"
                       >
                         <Edit2 className="h-3.5 w-3.5" />
                       </button>
                       <button 
                         onClick={() => handleDeleteClick(v.id, v.placa)}
-                        className="p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-rose-500/80 hover:text-rose-400 hover:bg-rose-500/10 active:scale-95 transition-all cursor-pointer"
+                        className="p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-rose-500/80 hover:text-rose-400 hover:bg-rose-500/10 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer"
                         title="Eliminar vehículo"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

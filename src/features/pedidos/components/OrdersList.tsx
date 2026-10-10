@@ -5,11 +5,12 @@ import { getErrorMessage } from '../../../shared/utils/errors';
 import { getMaterialLabel } from '../../../shared/constants/materials';
 import { OrderDispatchDetailsModal } from './OrderDispatchDetailsModal';
 import { Pagination } from '../../../shared/components/Pagination';
+import { ListTableHeader } from '../../../shared/components/ListTableHeader';
 
 interface OrdersListProps {
   orders: Pedido[];
   onAssignClick: (order: Pedido) => void;
-  onCancelOrder: (id: string) => Promise<void>;
+  onCancelOrder?: (id: string) => Promise<void>;
   isAdmin?: boolean;
 }
 
@@ -25,6 +26,8 @@ export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = fal
   const currentOrders = orders.slice(startIndex, endIndex);
 
   const handleCancelClick = async (id: string) => {
+    if (!onCancelOrder) return;
+
     if (confirm('¿Estás seguro de que deseas cancelar este pedido? Esta acción no se puede deshacer.')) {
       try {
         await onCancelOrder(id);
@@ -59,16 +62,14 @@ export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = fal
       ) : (
         <div className="overflow-x-auto text-xs relative z-10">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-900 text-slate-500 font-bold uppercase tracking-wider text-[10px] bg-slate-950/20">
-                <th className="py-3 px-4">Constructora / Cliente</th>
-                <th className="py-3 px-4">Material</th>
-                <th className="py-3 px-4">Volumen</th>
-                <th className="py-3 px-4">Destino de Entrega</th>
-                <th className="py-3 px-4">Estado</th>
-                <th className="py-3 px-4 text-right">Acciones</th>
-              </tr>
-            </thead>
+            <ListTableHeader columns={[
+              { label: 'Constructora / Cliente' },
+              { label: 'Material' },
+              { label: 'Volumen' },
+              { label: 'Destino de Entrega' },
+              { label: 'Estado' },
+              { label: 'Acciones', align: 'right' },
+            ]} />
             <tbody className="divide-y divide-slate-900/60">
               {currentOrders.map((p) => (
                 <tr key={p.id} className="hover:bg-slate-900/10 transition-colors">
@@ -105,7 +106,7 @@ export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = fal
                         <button 
                           type="button"
                           onClick={() => onAssignClick(p)}
-                          className="px-2.5 py-1.5 rounded-lg bg-amber-500 text-amber-950 font-bold hover:bg-amber-600 active:scale-95 transition-all cursor-pointer flex items-center gap-1 text-[10px]"
+                          className="px-2.5 py-1.5 rounded-lg bg-amber-500 text-amber-950 font-bold hover:bg-amber-600 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer flex items-center gap-1 text-[10px]"
                           title="Asignar volquete de despacho"
                         >
                           <Truck className="h-3.5 w-3.5" />
@@ -113,11 +114,11 @@ export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = fal
                         </button>
                       )}
                       
-                      {p.estado === 'PENDIENTE' && (
+                      {isAdmin && p.estado === 'PENDIENTE' && (
                         <button 
                           type="button"
                           onClick={() => handleCancelClick(p.id)}
-                          className="p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-rose-500 hover:bg-rose-500/10 hover:border-rose-500/20 active:scale-95 transition-all cursor-pointer"
+                          className="p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-rose-500 hover:bg-rose-500/10 hover:border-rose-500/20 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer"
                           title="Cancelar pedido"
                         >
                           <ShieldX className="h-3.5 w-3.5" />
@@ -128,7 +129,7 @@ export function OrdersList({ orders, onAssignClick, onCancelOrder, isAdmin = fal
                         <button 
                           type="button"
                           onClick={() => setSelectedDispatchOrder(p)}
-                          className="p-1.5 rounded-lg border border-slate-850 bg-slate-950 text-slate-450 hover:text-amber-400 hover:border-amber-500/30 transition-all cursor-pointer flex items-center justify-center"
+                          className="p-1.5 rounded-lg border border-slate-850 bg-slate-950 text-slate-450 hover:text-amber-400 hover:border-amber-500/30 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer flex items-center justify-center"
                           title="Ver detalles del despacho"
                         >
                           <Info className="h-3.5 w-3.5" />

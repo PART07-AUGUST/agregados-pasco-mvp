@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../shared/stores/useAuthStore';
 
+// react-doctor-disable-next-line no-giant-component
 export function LandingPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -51,7 +52,7 @@ export function LandingPage() {
                   else if (user.rol === 'CLIENTE') navigate('/cliente');
                   else navigate('/');
                 }}
-                className="px-4 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-amber-400 hover:text-amber-500 text-xs font-bold active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-amber-400 hover:text-amber-500 text-xs font-bold active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer flex items-center gap-1.5"
               >
                 <HardHat className="h-3.5 w-3.5 text-amber-500" />
                 <span>Panel de {user.nombre.split(' ')[0]}</span>
@@ -59,7 +60,7 @@ export function LandingPage() {
             ) : (
               <Link
                 to="/login"
-                className="px-4 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/10 flex items-center gap-1 cursor-pointer"
+                className="px-4 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] shadow-md shadow-amber-500/10 flex items-center gap-1 cursor-pointer"
               >
                 <HardHat className="h-3.5 w-3.5" />
                 <span>Portal Logístico</span>
@@ -102,13 +103,13 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4 max-w-sm mx-auto pt-2">
             <a
               href="#servicios"
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-600 active:scale-95 transition-all text-center shadow-lg shadow-amber-500/20 cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-600 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] text-center shadow-lg shadow-amber-500/20 cursor-pointer"
             >
               Ver Materiales
             </a>
             <a
               href="#cobertura"
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-semibold hover:bg-slate-800 active:scale-95 transition-all text-center cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-semibold hover:bg-slate-800 active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] text-center cursor-pointer"
             >
               Zonas de Despacho
             </a>
@@ -144,19 +145,19 @@ export function LandingPage() {
           <div className="flex justify-center space-x-2 bg-slate-900 p-1.5 rounded-xl max-w-sm mx-auto">
             <button
               onClick={() => setActiveTab('materiales')}
-              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${activeTab === 'materiales' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer ${activeTab === 'materiales' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
             >
               Materiales
             </button>
             <button
               onClick={() => setActiveTab('flota')}
-              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${activeTab === 'flota' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer ${activeTab === 'flota' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
             >
               Flota de Volquetes
             </button>
             <button
               onClick={() => setActiveTab('cobertura')}
-              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${activeTab === 'cobertura' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-[color,background-color,border-color,opacity,transform,box-shadow] cursor-pointer ${activeTab === 'cobertura' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}
             >
               Canteras y Origen
             </button>
@@ -167,7 +168,7 @@ export function LandingPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
               {/* Material 1: Arena */}
-              <div className="bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-2xl p-6 space-y-4 hover:translate-y-[-4px] transition-all">
+              <div className="bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-2xl p-6 space-y-4 hover:translate-y-[-4px] transition-[color,background-color,border-color,opacity,transform,box-shadow]">
                 <div className="h-40 rounded-xl border border-amber-900/30 flex items-center justify-center relative overflow-hidden bg-slate-950">
                   <img
                     src="https://grupohammersac.com/wp-content/uploads/2021/07/1-2-1.jpg"
@@ -188,7 +189,7 @@ export function LandingPage() {
               </div>
 
               {/* Material 2: Piedra Chancada */}
-              <div className="bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-2xl p-6 space-y-4 hover:translate-y-[-4px] transition-all">
+              <div className="bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-2xl p-6 space-y-4 hover:translate-y-[-4px] transition-[color,background-color,border-color,opacity,transform,box-shadow]">
                 <div className="h-40 rounded-xl border border-slate-800/30 flex items-center justify-center relative overflow-hidden bg-slate-950">
                   <img
                     src="https://d34fyu2ua7aizz.cloudfront.net/images/product/6/large/ts_image_5e78e07b27b0b8_15411847.png"
@@ -209,7 +210,7 @@ export function LandingPage() {
               </div>
 
               {/* Material 3: Afirmado */}
-              <div className="bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-2xl p-6 space-y-4 hover:translate-y-[-4px] transition-all">
+              <div className="bg-slate-900/40 border border-slate-900 hover:border-slate-800 rounded-2xl p-6 space-y-4 hover:translate-y-[-4px] transition-[color,background-color,border-color,opacity,transform,box-shadow]">
                 <div className="h-40 rounded-xl border border-amber-950/30 flex items-center justify-center relative overflow-hidden bg-slate-950">
                   <img
                     src="https://ferrincorp.com.pe/wp-content/uploads/2024/08/ARENAGRUESA_1-300x300.webp"
@@ -308,6 +309,7 @@ export function LandingPage() {
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3920.8991117082287!2d-76.25562122538891!3d-10.66493858947709!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x910812b72a568a67%3A0x7aa1547f568fd8ce!2sEscuela%20de%20Sistemas%20y%20Computaci%C3%B3n%20UNDAC!5e0!3m2!1ses!2spe!4v1779932664009!5m2!1ses!2spe"
               className="h-full w-full"
               style={{ border: 0 }}
+              sandbox=""
               allowFullScreen
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"

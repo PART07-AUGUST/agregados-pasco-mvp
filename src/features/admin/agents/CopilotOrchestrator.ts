@@ -1,24 +1,71 @@
-import { fuelAuditAgent } from './FuelAuditAgent';
-import { fleetDispatchAgent } from './FleetDispatchAgent';
-import { supervisorAgent } from './SupervisorAgent';
-import { RouteParamsParser } from './parsers/RouteParamsParser';
-import { matchesCombustible, matchesFlota } from './keywordMatcher';
-import { AdminLogisticsContextService } from '../../../shared/services/adminLogisticsContextService';
-import { FuelPredictionService } from '../../../shared/services/fuelPredictionService';
 import { apiClient } from '../../../shared/services/apiClient';
+import { ApiError } from '../../../shared/services/apiError';
 import type { ConsultaCopilotResponseDto } from '../../../shared/types/api/copilotDto';
-import type { AgentContext, AgentExecutionOutput, AgentRole, ConversationTurn, IAgent, ReActTraceStep } from './types';
+import type { AgentExecutionOutput, AgentRole, ConversationTurn, ReActTraceStep } from './types';
 
-type Ruta = 'AUDITOR_ML' | 'FLOTA_DESPACHO' | 'COMITE';
+const esRegistro = (valor: unknown): valor is Record<string, unknown> =>
+  typeof valor === 'object' && valor !== null && !Array.isArray(valor);
 
-const LLAMADAS_COMITE = 3;
+const mostrarValor = (valor: unknown): string => {
+  if (valor === null || valor === undefined) {
+    return 'N/D';
+  }
+  if (typeof valor === 'string' || typeof valor === 'number' || typeof valor === 'boolean') {
+    return String(valor);
+  }
+  try {
+    return JSON.stringify(valor) ?? 'N/D';
+  } catch {
+    return 'Resultado no serializable';
+  }
+};
+
+const resumirResultado = (herramienta: string, resultado: unknown): string => {
+
+  if (herramienta === 'ConsultaFlotaTool' && esRegistro(resultado)) {
+    return [
+      `Flota total: ${mostrarValor(resultado.total_vehiculos)} volquetes`,
+      `disponibles: ${mostrarValor(resultado.vehiculos_disponibles)}`,
+      `conductores totales: ${mostrarValor(resultado.total_conductores)}`,
+      `conductores disponibles: ${mostrarValor(resultado.conductores_disponibles)}`,
+      `viajes activos: ${mostrarValor(resultado.viajes_activos)}`,
+    ].join(' | ');
+  }
+
+  if (herramienta === 'ConsultaPedidosTool' && esRegistro(resultado)) {
+    return `Pedidos pendientes: ${mostrarValor(resultado.pedidos_pendientes)}.`;
+  }
+
+  return mostrarValor(resultado);
+};
+
+const mapearTrazaCopilot = (
+  traza: unknown,
+  indice: number,
+  agente: AgentRole
+) => {
+  const dato = esRegistro(traza) ? traza : {};
+  const herramienta = typeof dato.herramienta === 'string' ? dato.herramienta : 'herramienta_desconocida';
+  const pensamiento = typeof dato.pensamiento === 'string'
+    ? dato.pensamiento
+    : `Paso ${indice + 1} sin pensamiento registrado.`;
+
+  return {
+    paso: indice + 1,
+    agente,
+    pensamiento,
+    herramientaInvocada: herramienta,
+    parametrosValidados: esRegistro(dato.parametros) ? dato.parametros : {},
+    observacionResumida: resumirResultado(herramienta, dato.resultado),
+    estado: 'EXITOSO',
+  } satisfies ReActTraceStep;
+};
 
 export class CopilotOrchestrator {
   async processQuery(
     consulta: string,
     historial: ConversationTurn[] = [],
-    agenteForzado?: AgentRole,
-    presupuestoLlamadas = Number.POSITIVE_INFINITY
+    agenteForzado?: AgentRole
   ): Promise<AgentExecutionOutput> {
     try {
       const response = await apiClient.post<ConsultaCopilotResponseDto>('/copilot/consultas', {
@@ -32,101 +79,31 @@ export class CopilotOrchestrator {
           rol: response.rol,
           nombre: response.nombre_agente,
           respuesta: response.respuesta,
-          trazas: response.trazas.map((traza, indice) => ({ ...traza, paso: indice + 1 })),
+          trazas: (Array.isArray(response.trazas) ? response.trazas : []).map((traza, indice) =>
+            mapearTrazaCopilot(traza, indice, response.rol)
+          ),
           llamadasLLM: response.llamadas_llm,
         };
       }
-    } catch {
-      // Fallback local en caso de que el backend esté en transición o offline
-    }
-
-    const contexto = await this.cargarContexto();
-    const ruta = this.decidirRuta(consulta, agenteForzado, presupuestoLlamadas);
-    const resultado = await this.ejecutarRuta(ruta, consulta, contexto, historial);
-    return {
-      ...resultado,
-      trazas: resultado.trazas.map((traza, indice) => ({ ...traza, paso: indice + 1 })),
-    };
-  }
-
-  private ejecutarRuta(ruta: Ruta, consulta: string, contexto: AgentContext, historial: ConversationTurn[]): Promise<AgentExecutionOutput> {
-    if (ruta === 'AUDITOR_ML') {
-      return fuelAuditAgent.ejecutar(consulta, contexto, historial);
-    }
-    if (ruta === 'FLOTA_DESPACHO') {
-      return fleetDispatchAgent.ejecutar(consulta, contexto, historial);
-    }
-    return this.ejecutarComite(consulta, contexto, historial);
-  }
-
-  private async cargarContexto(): Promise<AgentContext> {
-    const [snapshot, mlParams] = await Promise.all([
-      AdminLogisticsContextService.getLiveSnapshot(),
-      FuelPredictionService.loadActiveParams(),
-    ]);
-    return { snapshot, mlParams };
-  }
-
-  private decidirRuta(consulta: string, agenteForzado: AgentRole | undefined, presupuesto: number): Ruta {
-    if (agenteForzado === 'AUDITOR_ML' || agenteForzado === 'FLOTA_DESPACHO') {
-      return agenteForzado;
-    }
-
-    const tieneRuta = RouteParamsParser.parse(consulta).distanciaKm !== undefined;
-    const esCombustible = tieneRuta || matchesCombustible(consulta);
-    const esFlota = matchesFlota(consulta);
-
-    if (esCombustible && !esFlota) {
-      return 'AUDITOR_ML';
-    }
-    if (esFlota && !esCombustible) {
-      return 'FLOTA_DESPACHO';
-    }
-    if (presupuesto < LLAMADAS_COMITE) {
-      return esCombustible ? 'AUDITOR_ML' : 'FLOTA_DESPACHO';
-    }
-    return 'COMITE';
-  }
-
-  private async ejecutarComite(consulta: string, contexto: AgentContext, historial: ConversationTurn[]): Promise<AgentExecutionOutput> {
-    const especialistas: IAgent[] = [fuelAuditAgent, fleetDispatchAgent];
-    const resultados = await Promise.allSettled(especialistas.map((a) => a.ejecutar(consulta, contexto, historial)));
-
-    const exitosos: AgentExecutionOutput[] = [];
-    const trazasFallo: ReActTraceStep[] = [];
-
-    resultados.forEach((resultado, indice) => {
-      if (resultado.status === 'fulfilled') {
-        exitosos.push(resultado.value);
-        return;
+      throw new Error('El backend devolvió una respuesta inválida para el Copiloto.');
+    } catch (error: unknown) {
+      if (error instanceof ApiError) {
+        if (error.status === 401 || error.status === 403) {
+          throw new Error('Tu sesión no tiene permiso para usar el Copiloto.', { cause: error });
+        }
+        if (error.status >= 500 || error.status === 0) {
+          throw new Error('El Copiloto no está disponible en este momento. Intenta nuevamente más tarde.', { cause: error });
+        }
       }
-      trazasFallo.push(this.trazaDeFallo(especialistas[indice], resultado.reason));
-    });
 
-    if (exitosos.length === 0) {
-      const primerFallo = resultados.find((r) => r.status === 'rejected');
-      throw primerFallo && primerFallo.status === 'rejected' ? primerFallo.reason : new Error('Ningún agente pudo responder.');
+      if (error instanceof TypeError) {
+        throw new Error('No se pudo conectar con el servicio del Copiloto.', { cause: error });
+      }
+
+      throw error instanceof Error
+        ? error
+        : new Error('No se pudo procesar la consulta del Copiloto.', { cause: error });
     }
-
-    if (exitosos.length === 1) {
-      const [unico] = exitosos;
-      return { ...unico, trazas: [...unico.trazas, ...trazasFallo] };
-    }
-
-    return supervisorAgent.sintetizar(consulta, exitosos, historial);
-  }
-
-  private trazaDeFallo(agente: IAgent, motivo: unknown): ReActTraceStep {
-    const mensaje = motivo instanceof Error ? motivo.message : 'Error desconocido';
-    return {
-      paso: 0,
-      agente: agente.rol,
-      pensamiento: `${agente.nombre} no pudo completar su análisis; el comité continúa con los demás.`,
-      herramientaInvocada: 'ninguna',
-      parametrosValidados: {},
-      observacionResumida: mensaje,
-      estado: 'ERROR_CONTROLADO',
-    };
   }
 }
 

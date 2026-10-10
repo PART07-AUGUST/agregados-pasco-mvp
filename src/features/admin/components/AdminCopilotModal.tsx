@@ -101,6 +101,8 @@ export function AdminCopilotModal({
 
         <form onSubmit={handleSubmit} className="p-3 bg-slate-900/60 border-t border-slate-900 flex gap-2">
           <input
+            id="copilot-prompt"
+            aria-label="Pregunta para el copiloto"
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -110,6 +112,7 @@ export function AdminCopilotModal({
           />
           <button
             type="submit"
+            aria-label="Enviar mensaje al copiloto"
             disabled={isGenerating || !input.trim()}
             className="px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-30 disabled:cursor-not-allowed text-slate-950 font-bold transition-colors cursor-pointer flex items-center justify-center"
           >

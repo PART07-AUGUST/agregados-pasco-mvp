@@ -48,7 +48,7 @@ export function OrderDispatchDetailsModal({ order, onClose }: OrderDispatchDetai
                   href={`https://wa.me/51${order.conductorCelular}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-xl font-bold transition-all text-[10.5px] cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-xl font-bold transition-[color,background-color,border-color,opacity,transform,box-shadow] text-[10.5px] cursor-pointer"
                   title="Contactar por WhatsApp"
                 >
                   <span>💬 WhatsApp:</span>
@@ -63,7 +63,7 @@ export function OrderDispatchDetailsModal({ order, onClose }: OrderDispatchDetai
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white active:scale-95 transition-all font-semibold cursor-pointer text-xs"
+            className="w-full py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white active:scale-95 transition-[color,background-color,border-color,opacity,transform,box-shadow] font-semibold cursor-pointer text-xs"
           >
             Cerrar Ventana
           </button>
