@@ -7,6 +7,8 @@ export interface ReActTraceStep {
   agente: AgentRole;
   pensamiento: string;
   herramientaInvocada: string;
+  herramientaAmigable: string;
+  descripcionAmigable: string;
   parametrosValidados: Record<string, unknown>;
   observacionResumida: string;
   estado: 'EXITOSO' | 'ERROR_CONTROLADO';

@@ -1,0 +1,62 @@
+name: agregados-local
+
+services:
+  backend:
+    build:
+      context: ../Agregados-backend
+      dockerfile: Dockerfile.dev
+    env_file:
+      - ../Agregados-backend/.env
+    environment:
+      ENVIRONMENT: development
+      DEBUG: "true"
+      PORT: "8000"
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+      DOCS_ENABLED: "true"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../Agregados-backend:/app
+    command:
+      [
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload",
+        "--reload-dir",
+        "/app/app"
+      ]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/api/v1
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: ["pnpm", "dev", "--host", "0.0.0.0"]
+
+volumes:
+  frontend_node_modules:

@@ -60,45 +60,40 @@ export function useTripFuelPrediction(order: Pedido): TripFuelPredictionState {
 
   useEffect(() => {
     let cancelled = false;
+    const storedRoute = getStoredRoute({ distanciaKm, desnivelMetros, canteraOrigen });
 
-    const resolveRoute = async () => {
-      setRouteLoading(true);
-      setRouteMessage(null);
-
-      try {
-        const storedRoute = getStoredRoute({ distanciaKm, desnivelMetros, canteraOrigen });
+    void Promise.resolve()
+      .then(() => {
+        if (cancelled) return null;
+        setRouteLoading(true);
+        setRouteMessage(null);
         if (storedRoute) {
-          if (!cancelled) {
-            setRoute(storedRoute);
-          }
-          return;
+          setRoute(storedRoute);
+          return null;
         }
-
-        const quote = await freightService.calculateFreightQuote({
+        return freightService.calculateFreightQuote({
           destinationName: destino,
           volumenM3,
           quarry: DEFAULT_QUARRY,
         });
-
-        if (!cancelled) {
-          setRoute({
-            distanciaKm: quote.distanceKm,
-            desnivelMetros: quote.ascendMeters ?? 0,
-            canteraOrigen: quote.quarry.name,
-          });
-        }
-      } catch (routeError: unknown) {
+      })
+      .then((quote) => {
+        if (!quote || cancelled) return;
+        setRoute({
+          distanciaKm: quote.distanceKm,
+          desnivelMetros: quote.ascendMeters ?? 0,
+          canteraOrigen: quote.quarry.name,
+        });
+      })
+      .catch((routeError: unknown) => {
         console.warn('No se pudo recalcular la ruta del pedido; usando fallback:', routeError);
-        if (!cancelled) {
-          setRoute(FALLBACK_ROUTE);
-          setRouteMessage('No se pudo recalcular la ruta. Se usará una ruta aproximada para la predicción.');
-        }
-      } finally {
-        setRouteLoading((current) => (cancelled ? current : false));
-      }
-    };
-
-    void resolveRoute();
+        if (cancelled) return;
+        setRoute(FALLBACK_ROUTE);
+        setRouteMessage('No se pudo recalcular la ruta. Se usará una ruta aproximada para la predicción.');
+      })
+      .finally(() => {
+        if (!cancelled) setRouteLoading(false);
+      });
 
     return () => {
       cancelled = true;

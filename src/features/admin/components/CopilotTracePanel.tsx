@@ -7,20 +7,12 @@ interface CopilotTracePanelProps {
   trazas: ReActTraceStep[];
 }
 
-const formatearParametros = (parametros?: Record<string, unknown>): string => {
-  const entradas = Object.entries(parametros ?? {});
-  if (entradas.length === 0) {
-    return 'sin parámetros';
-  }
-  return entradas.map(([clave, valor]) => `${clave}=${String(valor)}`).join(', ');
-};
-
 function TraceStepItem({ traza }: { traza: ReActTraceStep }) {
   const meta = AGENT_VISUAL_META[traza.agente] ?? DEFAULT_AGENT_VISUAL_META;
   const exitoso = traza.estado === 'EXITOSO';
   const IconoEstado = exitoso ? CheckCircle2 : AlertTriangle;
-  const herramienta = traza.herramientaInvocada || 'herramienta_desconocida';
-  const pensamiento = traza.pensamiento || 'Sin pensamiento disponible.';
+  const herramienta = traza.herramientaAmigable || 'Consulta del sistema';
+  const descripcion = traza.descripcionAmigable || 'Procesé la información solicitada.';
   const observacion = traza.observacionResumida || 'Sin observación disponible.';
 
   return (
@@ -29,21 +21,18 @@ function TraceStepItem({ traza }: { traza: ReActTraceStep }) {
         <span className={`px-1.5 py-0.5 rounded border text-[9px] font-mono font-bold ${meta.claseBadge}`}>
           Paso {traza.paso} · {meta.etiqueta}
         </span>
+        <span className="text-[9px] text-slate-500 truncate">{herramienta}</span>
         <span className={`flex items-center gap-1 text-[9px] font-mono ${exitoso ? 'text-emerald-400' : 'text-rose-400'}`}>
           <IconoEstado className="h-3 w-3" />
-          {traza.estado}
+          {exitoso ? 'LISTO' : 'REVISAR'}
         </span>
       </div>
-      <p className="text-[10px] text-slate-300">
-        <span className="text-slate-500 font-semibold">Pensamiento: </span>
-        {pensamiento}
-      </p>
-      <p className="text-[10px] text-slate-300 font-mono">
-        <span className="text-slate-500 font-semibold font-sans">Acción: </span>
-        {herramienta}({formatearParametros(traza.parametrosValidados)})
+      <p className="text-[10px] text-slate-200">
+        <span className="text-slate-500 font-semibold">Qué hice: </span>
+        {descripcion}
       </p>
       <p className="text-[10px] text-slate-300">
-        <span className="text-slate-500 font-semibold">Observación: </span>
+        <span className="text-slate-500 font-semibold">Resultado: </span>
         {observacion}
       </p>
     </li>

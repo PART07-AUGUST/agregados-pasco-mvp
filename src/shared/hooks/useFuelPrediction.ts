@@ -27,36 +27,34 @@ export function useFuelPrediction(input: FuelPredictionInput | null): FuelPredic
 
     let cancelled = false;
 
-    const loadPrediction = async () => {
-      setPrediction(null);
-      setPredictionLoading(true);
-      setPredictionError(null);
-
-      try {
-        await fuelPredictionService.loadActiveParams();
-        const result = await fuelPredictionService.predictOnline({
+    void Promise.resolve()
+      .then(() => {
+        if (cancelled) return null;
+        setPrediction(null);
+        setPredictionLoading(true);
+        setPredictionError(null);
+        return fuelPredictionService.loadActiveParams();
+      })
+      .then(() => {
+        if (cancelled) return null;
+        return fuelPredictionService.predictOnline({
           distanciaKm,
           desnivelMetros,
           pesoCargaTon,
         });
-
-        if (!cancelled) {
-          setPrediction(result);
-        }
-      } catch (predictionLoadError: unknown) {
+      })
+      .then((result) => {
+        if (result && !cancelled) setPrediction(result);
+      })
+      .catch((predictionLoadError: unknown) => {
         console.error('No se pudo obtener la predicción de combustible:', predictionLoadError);
-        if (!cancelled) {
-          setPredictionError('No se pudo calcular la predicción de combustible.');
-          setPrediction(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setPredictionLoading(false);
-        }
-      }
-    };
-
-    void loadPrediction();
+        if (cancelled) return;
+        setPredictionError('No se pudo calcular la predicción de combustible.');
+        setPrediction(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPredictionLoading(false);
+      });
 
     return () => {
       cancelled = true;

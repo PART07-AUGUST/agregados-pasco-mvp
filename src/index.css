@@ -37,6 +37,44 @@
   }
 }
 
+/* Escala tipográfica global: mejora la lectura sin cambiar el layout de la app. */
+@layer base {
+  html {
+    font-size: 106.25%;
+  }
+}
+
+/* Los textos auxiliares más pequeños también ganan legibilidad de forma sutil. */
+@layer utilities {
+  [class~="text-[8px]"] {
+    font-size: 9px !important;
+  }
+
+  [class~="text-[8.5px]"] {
+    font-size: 9.5px !important;
+  }
+
+  [class~="text-[9px]"] {
+    font-size: 10px !important;
+  }
+
+  [class~="text-[9.5px]"] {
+    font-size: 10.5px !important;
+  }
+
+  [class~="text-[10px]"] {
+    font-size: 11px !important;
+  }
+
+  [class~="text-[10.5px]"] {
+    font-size: 11px !important;
+  }
+
+  [class~="text-[11px]"] {
+    font-size: 12px !important;
+  }
+}
+
 /* Smooth transition defaults */
 * {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;

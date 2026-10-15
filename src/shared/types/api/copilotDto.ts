@@ -13,10 +13,27 @@ export interface TurnoConversacionDto {
   contenido: string;
 }
 
+export interface TramoRutaCombustibleDto {
+  cantera: string;
+  destino: string;
+  distancia_km: number;
+  desnivel_metros: number;
+  peso_carga_ton: number;
+  proveedor_ruta: 'google_maps' | 'graphhopper';
+}
+
+export interface ContextoRutaCombustibleDto {
+  tramos: TramoRutaCombustibleDto[];
+  ida_y_vuelta: boolean;
+  carga_asumida: boolean;
+  calcular_combustible: boolean;
+}
+
 export interface CrearConsultaCopilotRequestDto {
   mensaje: string;
   historial?: TurnoConversacionDto[];
   rol_forzado?: AgentRole;
+  contexto_ruta?: ContextoRutaCombustibleDto;
 }
 
 export interface ConsultaCopilotResponseDto {
