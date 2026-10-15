@@ -24,6 +24,9 @@ export const pedidoMapper = {
       destino: dto.destino,
       estado: dto.estado as Pedido['estado'],
       createdAt: dto.created_at,
+      distanciaKm: dto.distancia_km != null ? Number(dto.distancia_km) : undefined,
+      desnivelMetros: dto.desnivel_metros != null ? Number(dto.desnivel_metros) : undefined,
+      canteraOrigen: dto.cantera_origen ?? undefined,
       clienteNombre: extra?.clienteNombre,
       vehiculoPlaca: extra?.vehiculoPlaca,
       vehiculoMarca: extra?.vehiculoMarca,
@@ -39,6 +42,9 @@ export const pedidoMapper = {
       material: domain.material,
       volumen_m3: domain.volumenM3,
       destino: domain.destino.trim(),
+      distancia_km: domain.distanciaKm ?? null,
+      desnivel_metros: domain.desnivelMetros ?? null,
+      cantera_origen: domain.canteraOrigen ?? null,
     };
   },
 };

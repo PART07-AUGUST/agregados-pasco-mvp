@@ -6,7 +6,6 @@ import {
   Navigation,
   FileCheck2,
   HardHat,
-  Loader2,
   RefreshCw,
   WifiOff,
 } from 'lucide-react';
@@ -17,6 +16,7 @@ import { DriverTripActive } from '../features/viajes/components/DriverTripActive
 import { OfflineQueueManager } from '../features/viajes/components/OfflineQueueManager';
 import { supabase } from '../shared/services/supabase';
 import { getErrorMessage } from '../shared/utils/errors';
+import { ShimmerSkeleton } from '../shared/components/ShimmerSkeleton';
 
 function subscribeToOnlineStatus(callback: () => void) {
   window.addEventListener('online', callback);
@@ -224,9 +224,13 @@ export function DriverDashboard() {
             <Navigation className="h-5 w-5 text-indigo-400" />
             <div className="mt-4">
               <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Historial</span>
-              <h3 className="text-lg font-bold text-white font-mono leading-none mt-1">
-                {loading ? '--' : `${completedCount} viajes`}
-              </h3>
+              {loading ? (
+                <ShimmerSkeleton className="h-5 w-24 mt-2" />
+              ) : (
+                <h3 className="text-lg font-bold text-white font-mono leading-none mt-1">
+                  {`${completedCount} viajes`}
+                </h3>
+              )}
             </div>
           </div>
 
@@ -243,9 +247,11 @@ export function DriverDashboard() {
         <OfflineQueueManager onSyncSuccess={() => refreshDriverData(true)} />
 
         {loading ? (
-          <div className="p-12 bg-slate-900/30 border border-slate-900 rounded-3xl flex flex-col items-center justify-center space-y-3">
-            <Loader2 className="h-7 w-7 text-amber-500 animate-spin" />
-            <span className="text-xs text-slate-450 font-medium">Sincronizando datos de despacho...</span>
+          <div aria-busy="true" className="p-5 bg-slate-900/30 border border-slate-900 rounded-3xl space-y-4">
+            <ShimmerSkeleton className="h-4 w-56" />
+            <ShimmerSkeleton className="h-20 w-full rounded-2xl" />
+            <ShimmerSkeleton className="h-10 w-40 mx-auto" />
+            <span className="text-xs text-slate-500 font-medium block text-center">Sincronizando datos de despacho...</span>
           </div>
         ) : error ? (
           <div className="p-6 bg-rose-500/10 border border-rose-500/20 rounded-3xl text-center space-y-3">

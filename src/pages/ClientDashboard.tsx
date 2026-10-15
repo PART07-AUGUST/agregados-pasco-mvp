@@ -4,7 +4,6 @@ import {
   LayoutDashboard, 
   LogOut, 
   Plus, 
-  Loader2,
   RefreshCw,
   MessageSquare,
   Compass
@@ -16,6 +15,7 @@ import type { RouteCalculationResult } from '../shared/services/freightService';
 import { OrdersList } from '../features/pedidos/components/OrdersList';
 import { OrderForm, type OrderMaterialItem } from '../features/pedidos/components/OrderForm';
 import { FreightCalculatorModal } from '../features/pedidos/components/FreightCalculatorModal';
+import { ShimmerSkeleton } from '../shared/components/ShimmerSkeleton';
 
 export function ClientDashboard() {
   const navigate = useNavigate();
@@ -207,25 +207,25 @@ export function ClientDashboard() {
           <div className="p-4 bg-slate-900/20 border border-slate-900 rounded-3xl flex flex-col justify-between relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-slate-700" />
             <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Total Pedidos</span>
-            <h3 className="text-xl font-bold text-white font-mono mt-2">{loading ? '--' : totalPedidos}</h3>
+            {loading ? <ShimmerSkeleton className="h-7 w-12 mt-2" /> : <h3 className="text-xl font-bold text-white font-mono mt-2">{totalPedidos}</h3>}
           </div>
 
           <div className="p-4 bg-slate-900/20 border border-slate-900 rounded-3xl flex flex-col justify-between relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
             <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Pendientes de Pago</span>
-            <h3 className="text-xl font-bold text-white font-mono mt-2">{loading ? '--' : pedidosPendientes}</h3>
+            {loading ? <ShimmerSkeleton className="h-7 w-12 mt-2" /> : <h3 className="text-xl font-bold text-white font-mono mt-2">{pedidosPendientes}</h3>}
           </div>
 
           <div className="p-4 bg-slate-900/20 border border-slate-900 rounded-3xl flex flex-col justify-between relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500" />
             <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Despachados / En Ruta</span>
-            <h3 className="text-xl font-bold text-white font-mono mt-2">{loading ? '--' : pedidosEnRuta}</h3>
+            {loading ? <ShimmerSkeleton className="h-7 w-12 mt-2" /> : <h3 className="text-xl font-bold text-white font-mono mt-2">{pedidosEnRuta}</h3>}
           </div>
 
           <div className="p-4 bg-slate-900/20 border border-slate-900 rounded-3xl flex flex-col justify-between relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
             <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Entregados en Obra</span>
-            <h3 className="text-xl font-bold text-white font-mono mt-2">{loading ? '--' : pedidosEntregados}</h3>
+            {loading ? <ShimmerSkeleton className="h-7 w-12 mt-2" /> : <h3 className="text-xl font-bold text-white font-mono mt-2">{pedidosEntregados}</h3>}
           </div>
         </div>
 
@@ -242,9 +242,20 @@ export function ClientDashboard() {
 
         {/* Listado de Pedidos */}
         {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center space-y-4">
-            <Loader2 className="w-10 h-10 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
-            <p className="text-xs text-slate-500 font-mono tracking-widest uppercase">Consultando base de datos...</p>
+          <div aria-busy="true" className="bg-slate-900/30 border border-slate-900 rounded-3xl overflow-hidden p-5 space-y-4">
+            <div className="flex justify-between">
+              <ShimmerSkeleton className="h-4 w-64" />
+              <ShimmerSkeleton className="h-5 w-20" />
+            </div>
+            {['client-row-one', 'client-row-two', 'client-row-three', 'client-row-four'].map((key) => (
+              <div key={key} className="grid grid-cols-4 gap-4 items-center border-t border-slate-900 pt-4">
+                <ShimmerSkeleton className="h-3 w-28" />
+                <ShimmerSkeleton className="h-3 w-24" />
+                <ShimmerSkeleton className="h-3 w-36" />
+                <ShimmerSkeleton className="h-6 w-20 justify-self-end" />
+              </div>
+            ))}
+            <p className="text-xs text-slate-500 font-mono tracking-widest uppercase text-center pt-2">Consultando base de datos...</p>
           </div>
         ) : (
           <OrdersList 

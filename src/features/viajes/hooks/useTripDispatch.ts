@@ -3,11 +3,16 @@ import {
   tripsService,
   type VehiculoDespachoOption,
   type ConductorDespachoOption,
+  type TripRouteInput,
 } from '../../../shared/services/tripsService';
 import type { Pedido } from '../../../shared/services/ordersService';
 import { getErrorMessage } from '../../../shared/utils/errors';
 
-export function useTripDispatch(order: Pedido, onSuccess: () => void) {
+export function useTripDispatch(
+  order: Pedido,
+  onSuccess: () => void,
+  route?: TripRouteInput
+) {
   const [vehiculos, setVehiculos] = useState<VehiculoDespachoOption[]>([]);
   const [conductores, setConductores] = useState<ConductorDespachoOption[]>([]);
   const [selectedVehiculoId, setSelectedVehiculoId] = useState('');
@@ -57,10 +62,15 @@ export function useTripDispatch(order: Pedido, onSuccess: () => void) {
       return;
     }
 
+    if (!route) {
+      setError('Aún no se ha podido calcular la ruta para este viaje.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await tripsService.assignTrip(order.id, selectedVehiculoId, selectedConductorId);
+      await tripsService.assignTrip(order.id, selectedVehiculoId, selectedConductorId, route);
       onSuccess();
     } catch (assignError: unknown) {
       console.error('Error al asignar viaje:', assignError);

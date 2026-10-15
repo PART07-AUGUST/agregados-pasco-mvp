@@ -13,6 +13,9 @@ export interface Pedido extends BaseEntity {
   destino: string;
   estado: 'PENDIENTE' | 'ASIGNADO' | 'EN_CAMINO' | 'ENTREGADO' | 'CANCELADO';
   createdAt: string;
+  distanciaKm?: number;
+  desnivelMetros?: number;
+  canteraOrigen?: string;
   clienteNombre?: string;
   vehiculoPlaca?: string;
   vehiculoMarca?: string;
