@@ -324,6 +324,28 @@ pnpm run lint
 pnpm run build
 ```
 
+### 🐳 Desarrollo local con frontend y backend en Docker
+
+Desde esta carpeta, con `Agregados-backend` ubicado en la carpeta hermana `Desktop`:
+
+```bash
+docker compose -f docker-compose.local.yml up --build
+```
+
+La aplicación queda disponible en [http://localhost:5173](http://localhost:5173) y la API en
+[http://localhost:8000/docs](http://localhost:8000/docs). Los dos servicios montan el código
+local: Vite y Uvicorn recargan automáticamente los cambios sin volver a desplegar.
+
+Para detenerlos:
+
+```bash
+docker compose -f docker-compose.local.yml down
+```
+
+El Compose local fuerza `VITE_API_BASE_URL=http://localhost:8000/api/v1`; las credenciales
+del backend se leen desde `Agregados-backend/.env` y las claves públicas del frontend desde
+`.env.local`.
+
 ---
 
 ## 🌐 Guía de Despliegue en Producción
