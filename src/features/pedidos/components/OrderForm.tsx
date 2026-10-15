@@ -192,6 +192,9 @@ export function OrderForm({
             material: item.material,
             volumenM3: Number(item.volumenM3),
             destino: destino.trim(),
+            distanciaKm: freightQuote?.distanceKm,
+            desnivelMetros: freightQuote?.ascendMeters,
+            canteraOrigen: freightQuote?.quarry.name,
           })
         )
       );

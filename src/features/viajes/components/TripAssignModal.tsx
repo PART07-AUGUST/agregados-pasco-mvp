@@ -1,9 +1,11 @@
-import { Truck, Users, Check, Loader2, AlertCircle, Fuel, Sparkles, Leaf } from 'lucide-react';
+import { Truck, Users, Check, Loader2, AlertCircle } from 'lucide-react';
 import type { Pedido } from '../../../shared/services/ordersService';
 import { getMaterialLabel } from '../../../shared/constants/materials';
 import { ModalContainer } from '../../../shared/components/ModalContainer';
 import { useTripDispatch } from '../hooks/useTripDispatch';
-import { fuelPredictionService } from '../../../shared/services/fuelPredictionService';
+import { useTripFuelPrediction } from '../hooks/useTripFuelPrediction';
+import { FuelPredictionCard } from '../../../shared/components/FuelPredictionCard';
+import { ShimmerSkeleton } from '../../../shared/components/ShimmerSkeleton';
 
 interface TripAssignModalProps {
   order: Pedido;
@@ -12,6 +14,15 @@ interface TripAssignModalProps {
 }
 
 export function TripAssignModal({ order, onSuccess, onCancel }: TripAssignModalProps) {
+  const {
+    route,
+    routeLoading,
+    routeMessage,
+    prediction,
+    predictionLoading,
+    predictionError,
+  } = useTripFuelPrediction(order);
+
   const {
     vehiculos,
     conductores,
@@ -23,11 +34,7 @@ export function TripAssignModal({ order, onSuccess, onCancel }: TripAssignModalP
     fetching,
     error,
     handleAssign,
-  } = useTripDispatch(order, onSuccess);
-
-  const mlPrediction = fuelPredictionService.predict(
-    fuelPredictionService.estimateTripParams(order.volumenM3)
-  );
+  } = useTripDispatch(order, onSuccess, route ?? undefined);
 
   return (
     <ModalContainer
@@ -56,44 +63,13 @@ export function TripAssignModal({ order, onSuccess, onCancel }: TripAssignModalP
           </div>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Estimación Inteligente de Combustible (ML)</span>
-            </div>
-            <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">
-              R² 97.9%
-            </span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-slate-950/60 p-2 rounded-xl border border-amber-500/10">
-              <span className="text-[10px] text-slate-400 flex items-center justify-center gap-1">
-                <Fuel className="h-3 w-3 text-amber-400" /> Diésel
-              </span>
-              <p className="text-xs font-mono font-bold text-amber-400 mt-0.5">
-                {mlPrediction.consumoDieselGalones} gal
-              </p>
-            </div>
-
-            <div className="bg-slate-950/60 p-2 rounded-xl border border-amber-500/10">
-              <span className="text-[10px] text-slate-400">Costo Est.</span>
-              <p className="text-xs font-mono font-bold text-slate-200 mt-0.5">
-                S/ {mlPrediction.costoEstimadoSoles}
-              </p>
-            </div>
-
-            <div className="bg-slate-950/60 p-2 rounded-xl border border-amber-500/10">
-              <span className="text-[10px] text-slate-400 flex items-center justify-center gap-1">
-                <Leaf className="h-3 w-3 text-emerald-400" /> CO₂ Est.
-              </span>
-              <p className="text-xs font-mono font-bold text-emerald-400 mt-0.5">
-                {mlPrediction.emisionesCo2Kg} kg
-              </p>
-            </div>
-          </div>
-        </div>
+        <FuelPredictionCard
+          routeLoading={routeLoading}
+          routeMessage={routeMessage}
+          prediction={routeLoading ? null : prediction}
+          predictionLoading={predictionLoading}
+          predictionError={predictionError}
+        />
 
         {error && (
           <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs flex items-start space-x-2">
@@ -103,11 +79,18 @@ export function TripAssignModal({ order, onSuccess, onCancel }: TripAssignModalP
         )}
 
         {fetching ? (
-          <div className="py-8 flex flex-col items-center justify-center space-y-3">
-            <Loader2 className="h-8 w-8 text-amber-500 animate-spin" />
-            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-mono">
-              Cargando flota y choferes...
-            </span>
+          <div aria-busy="true" className="py-5 space-y-4">
+            <div className="space-y-2">
+              <ShimmerSkeleton className="h-3 w-56" />
+              <ShimmerSkeleton className="h-10 w-full rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <ShimmerSkeleton className="h-3 w-52" />
+              <ShimmerSkeleton className="h-10 w-full rounded-xl" />
+            </div>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-mono text-center">
+              Cargando flota y conductores...
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -168,7 +151,7 @@ export function TripAssignModal({ order, onSuccess, onCancel }: TripAssignModalP
               <button
                 type="button"
                 onClick={() => void handleAssign()}
-                disabled={loading}
+                disabled={loading || routeLoading || predictionLoading || !route || !prediction}
                 className="flex-1 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-600 active:scale-95 transition-colors shadow-md shadow-amber-500/10 cursor-pointer flex items-center justify-center gap-1"
               >
                 {loading ? (

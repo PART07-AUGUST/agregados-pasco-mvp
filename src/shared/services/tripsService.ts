@@ -4,7 +4,7 @@ import type { Viaje } from '../types';
 import { offlineDb } from './offlineDb';
 import { viajeMapper } from '../mappers/viajeMapper';
 import type { PageResponse } from '../types/api/pageResponse';
-import type { ViajeResponseDto } from '../types/api/viajeDto';
+import type { ViajeCreateDto, ViajeResponseDto } from '../types/api/viajeDto';
 
 export interface ViajeDetallado extends Viaje {
   clienteNombre?: string;
@@ -32,6 +32,12 @@ export interface ConductorDespachoOption {
 export interface DispatchResources {
   vehiculos: VehiculoDespachoOption[];
   conductores: ConductorDespachoOption[];
+}
+
+export interface TripRouteInput {
+  distanciaKm: number;
+  desnivelMetros: number;
+  canteraOrigen?: string;
 }
 
 interface PedidoRowEnrichment {
@@ -149,8 +155,18 @@ export const tripsService = {
     });
   },
 
-  async assignTrip(pedidoId: string, vehiculoId: string, conductorId: string): Promise<string> {
-    const payload = viajeMapper.toCreateDto(pedidoId, vehiculoId, conductorId);
+  async assignTrip(
+    pedidoId: string,
+    vehiculoId: string,
+    conductorId: string,
+    route: TripRouteInput
+  ): Promise<string> {
+    const payload: ViajeCreateDto = viajeMapper.toCreateDto(
+      pedidoId,
+      vehiculoId,
+      conductorId,
+      route
+    );
     const res = await apiClient.post<ViajeResponseDto>('/viajes', payload);
     return res.id;
   },

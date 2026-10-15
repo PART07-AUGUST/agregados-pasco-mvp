@@ -1,0 +1,116 @@
+import { useEffect, useState } from 'react';
+import type { Pedido } from '../../../shared/services/ordersService';
+import {
+  DEFAULT_QUARRY,
+  freightService,
+} from '../../../shared/services/freightService';
+import {
+  fuelPredictionService,
+  type FuelPredictionResult,
+} from '../../../shared/services/fuelPredictionService';
+import type { TripRouteInput } from '../../../shared/services/tripsService';
+import { useFuelPrediction } from '../../../shared/hooks/useFuelPrediction';
+
+const FALLBACK_ROUTE: TripRouteInput = {
+  distanciaKm: 24.5,
+  desnivelMetros: 140,
+  canteraOrigen: DEFAULT_QUARRY.name,
+};
+
+export interface TripFuelPredictionState {
+  route: TripRouteInput | null;
+  routeLoading: boolean;
+  routeMessage: string | null;
+  prediction: FuelPredictionResult | null;
+  predictionLoading: boolean;
+  predictionError: string | null;
+}
+
+function getStoredRoute(order: Pick<Pedido, 'distanciaKm' | 'desnivelMetros' | 'canteraOrigen'>): TripRouteInput | null {
+  if (order.distanciaKm == null || order.distanciaKm <= 0) {
+    return null;
+  }
+
+  return {
+    distanciaKm: order.distanciaKm,
+    desnivelMetros: order.desnivelMetros ?? 0,
+    canteraOrigen: order.canteraOrigen || DEFAULT_QUARRY.name,
+  };
+}
+
+export function useTripFuelPrediction(order: Pedido): TripFuelPredictionState {
+  const {
+    canteraOrigen,
+    destino,
+    desnivelMetros,
+    distanciaKm,
+    volumenM3,
+  } = order;
+  const [route, setRoute] = useState<TripRouteInput | null>(null);
+  const [routeLoading, setRouteLoading] = useState(true);
+  const [routeMessage, setRouteMessage] = useState<string | null>(null);
+  const predictionInput = route
+    ? {
+        ...fuelPredictionService.estimateTripParams(volumenM3),
+        distanciaKm: route.distanciaKm,
+        desnivelMetros: route.desnivelMetros,
+      }
+    : null;
+  const { prediction, predictionLoading, predictionError } = useFuelPrediction(predictionInput);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const resolveRoute = async () => {
+      setRouteLoading(true);
+      setRouteMessage(null);
+
+      try {
+        const storedRoute = getStoredRoute({ distanciaKm, desnivelMetros, canteraOrigen });
+        if (storedRoute) {
+          if (!cancelled) {
+            setRoute(storedRoute);
+          }
+          return;
+        }
+
+        const quote = await freightService.calculateFreightQuote({
+          destinationName: destino,
+          volumenM3,
+          quarry: DEFAULT_QUARRY,
+        });
+
+        if (!cancelled) {
+          setRoute({
+            distanciaKm: quote.distanceKm,
+            desnivelMetros: quote.ascendMeters ?? 0,
+            canteraOrigen: quote.quarry.name,
+          });
+        }
+      } catch (routeError: unknown) {
+        console.warn('No se pudo recalcular la ruta del pedido; usando fallback:', routeError);
+        if (!cancelled) {
+          setRoute(FALLBACK_ROUTE);
+          setRouteMessage('No se pudo recalcular la ruta. Se usará una ruta aproximada para la predicción.');
+        }
+      } finally {
+        setRouteLoading((current) => (cancelled ? current : false));
+      }
+    };
+
+    void resolveRoute();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canteraOrigen, destino, desnivelMetros, distanciaKm, volumenM3]);
+
+  return {
+    route,
+    routeLoading,
+    routeMessage,
+    prediction,
+    predictionLoading,
+    predictionError,
+  };
+}

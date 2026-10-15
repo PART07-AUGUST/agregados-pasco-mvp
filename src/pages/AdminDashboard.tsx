@@ -18,6 +18,7 @@ import { AdminHeaderActions } from './admin/AdminHeaderActions';
 import { useAdminCopilot } from '../features/admin/hooks/useAdminCopilot';
 import { CopilotTriggerButton } from '../features/admin/components/CopilotTriggerButton';
 import { AdminCopilotModal } from '../features/admin/components/AdminCopilotModal';
+import { ShimmerSkeleton } from '../shared/components/ShimmerSkeleton';
 
 const DASHBOARD_TABS = [
   { id: 'monitoreo', label: 'Monitoreo de Despacho', icon: Activity },
@@ -25,6 +26,58 @@ const DASHBOARD_TABS = [
   { id: 'conductores', label: 'Conductores', icon: Users },
   { id: 'pedidos', label: 'Pedidos de Obra', icon: ClipboardList },
 ] as const;
+
+function AdminDashboardLoadingSkeleton({ activeTab }: { activeTab: string }) {
+  const isDriversTab = activeTab === 'conductores';
+  const skeletonKeys = ['one', 'two', 'three', 'four'];
+
+  return (
+    <div aria-busy="true" className="space-y-6">
+      {isDriversTab ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {skeletonKeys.map((key) => (
+            <div key={key} className="rounded-2xl border border-slate-900 bg-slate-900/30 p-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <ShimmerSkeleton className="h-10 w-10 rounded-xl" />
+                <div className="space-y-2 flex-1">
+                  <ShimmerSkeleton className="h-3 w-32" />
+                  <ShimmerSkeleton className="h-2.5 w-44" />
+                </div>
+              </div>
+              <div className="border-y border-slate-850 py-3 space-y-3">
+                <ShimmerSkeleton className="h-3 w-full" />
+                <ShimmerSkeleton className="h-3 w-4/5" />
+                <ShimmerSkeleton className="h-3 w-3/5" />
+              </div>
+              <div className="flex justify-between">
+                <ShimmerSkeleton className="h-7 w-24" />
+                <ShimmerSkeleton className="h-7 w-14" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-slate-900/30 border border-slate-900 rounded-3xl overflow-hidden">
+          <div className="p-5 border-b border-slate-900 space-y-2">
+            <ShimmerSkeleton className="h-4 w-64" />
+            <ShimmerSkeleton className="h-2.5 w-96 max-w-full" />
+          </div>
+          <div className="p-4 space-y-4">
+            {['row-one', 'row-two', 'row-three', 'row-four', 'row-five'].map((key) => (
+              <div key={key} className="grid grid-cols-5 gap-4 items-center">
+                <ShimmerSkeleton className="h-3 w-24" />
+                <ShimmerSkeleton className="h-3 w-32" />
+                <ShimmerSkeleton className="h-3 w-20" />
+                <ShimmerSkeleton className="h-3 w-40" />
+                <ShimmerSkeleton className="h-6 w-20 justify-self-end" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function AdminDashboard() {
   const {
@@ -146,10 +199,7 @@ export function AdminDashboard() {
         )}
 
         {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center space-y-4">
-            <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
-            <p className="text-xs text-slate-500 font-mono tracking-widest uppercase">Cargando panel de control...</p>
-          </div>
+          <AdminDashboardLoadingSkeleton activeTab={activeTab} />
         ) : (
           <div className="space-y-6">
             {activeTab === 'monitoreo' && (

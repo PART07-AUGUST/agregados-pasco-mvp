@@ -45,11 +45,23 @@ export const viajeMapper = {
     };
   },
 
-  toCreateDto(pedidoId: string, vehiculoId: string, conductorId: string): ViajeCreateDto {
+  toCreateDto(
+    pedidoId: string,
+    vehiculoId: string,
+    conductorId: string,
+    route?: {
+      distanciaKm?: number;
+      desnivelMetros?: number;
+      canteraOrigen?: string;
+    }
+  ): ViajeCreateDto {
     return {
       pedido_id: pedidoId,
       vehiculo_id: vehiculoId,
       conductor_id: conductorId,
+      distancia_km: route?.distanciaKm ?? null,
+      desnivel_metros: route?.desnivelMetros ?? null,
+      cantera_origen: route?.canteraOrigen ?? null,
     };
   },
 

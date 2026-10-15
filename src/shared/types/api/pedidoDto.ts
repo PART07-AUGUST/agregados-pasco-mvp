@@ -6,6 +6,9 @@ export interface PedidoResponseDto {
   destino: string;
   estado: string;
   created_at: string;
+  distancia_km?: number | string | null;
+  desnivel_metros?: number | string | null;
+  cantera_origen?: string | null;
 }
 
 export interface PedidoCreateDto {
@@ -13,6 +16,9 @@ export interface PedidoCreateDto {
   material: string;
   volumen_m3: number;
   destino: string;
+  distancia_km?: number | null;
+  desnivel_metros?: number | null;
+  cantera_origen?: string | null;
 }
 
 export interface PedidoUpdateDto {
@@ -20,4 +26,7 @@ export interface PedidoUpdateDto {
   material?: string;
   volumen_m3?: number;
   destino?: string;
+  distancia_km?: number | null;
+  desnivel_metros?: number | null;
+  cantera_origen?: string | null;
 }

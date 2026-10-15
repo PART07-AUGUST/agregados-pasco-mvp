@@ -17,6 +17,7 @@ export interface FuelPredictionResult {
   emisionesCo2Kg: number;
   precioGalonSoles: number;
   r2Score: number;
+  source: 'backend' | 'fallback';
 }
 
 export interface MLModelParams {
@@ -100,6 +101,7 @@ export class FuelPredictionService {
       emisionesCo2Kg,
       precioGalonSoles: PRECIO_DIESEL_PASCO_SOL,
       r2Score: params.r2Score,
+      source: 'fallback',
     };
   }
 
@@ -123,6 +125,7 @@ export class FuelPredictionService {
         emisionesCo2Kg,
         precioGalonSoles: precioGalon,
         r2Score: activeParams.r2Score,
+        source: 'backend',
       };
     } catch {
       return this.predict(input);

@@ -157,6 +157,7 @@ export function useFreightCalculator({
 
     async function computeQuote() {
       const destinationName = customDestino.trim() || 'Punto de Entrega';
+      setQuote(null);
       setLoading(true);
       setError(null);
 
