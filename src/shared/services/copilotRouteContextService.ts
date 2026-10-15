@@ -364,8 +364,10 @@ export const copilotRouteContextService = {
     const query = parseRouteQuery(message);
     if (!query || !query.destinationText) return null;
 
-    const destination = await resolveDestination(query.destinationText);
-    const quarries = await resolveQuarries(query.originText);
+    const [destination, quarries] = await Promise.all([
+      resolveDestination(query.destinationText),
+      resolveQuarries(query.originText),
+    ]);
     const multiplier = query.roundTrip ? 2 : 1;
     const tramos = await Promise.all(
       quarries.map(async (quarry): Promise<CopilotRouteSegment> => {
