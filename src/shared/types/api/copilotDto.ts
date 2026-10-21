@@ -6,6 +6,8 @@ export interface TrazaCopilotApiDto {
   herramienta: string;
   parametros: Record<string, unknown>;
   resultado: unknown;
+  agente?: AgentRole;
+  estado?: 'EXITOSO' | 'ERROR_CONTROLADO';
 }
 
 export interface TurnoConversacionDto {
@@ -43,6 +45,7 @@ export interface ConsultaCopilotResponseDto {
   respuesta: string;
   trazas: TrazaCopilotApiDto[];
   llamadas_llm: number;
+  agentes_participantes?: AgentRole[];
   creado_en: string;
 }
 

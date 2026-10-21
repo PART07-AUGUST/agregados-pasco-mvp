@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'admin_copilot_daily_usage';
-const MAX_DAILY_QUOTA = 25;
+const MAX_DAILY_QUOTA = 50;
 
 interface DailyUsageRecord {
   date: string;

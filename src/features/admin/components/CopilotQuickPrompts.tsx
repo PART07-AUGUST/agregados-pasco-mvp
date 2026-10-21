@@ -1,4 +1,4 @@
-import { AlertTriangle, Truck, Calculator, Users } from 'lucide-react';
+import { AlertTriangle, Truck, Calculator, Package, MapPinned } from 'lucide-react';
 import type { AgentRole } from '../agents/types';
 
 interface CopilotQuickPromptsProps {
@@ -29,14 +29,25 @@ const QUICK_PROMPTS: QuickPromptItem[] = [
   {
     icon: Truck,
     label: 'Flota: Unidades libres',
-    text: '¿Cuáles volquetes están libres y disponibles para despacho y cuántos pedidos tenemos pendientes?',
+    text: '¿Cuáles volquetes están libres y disponibles para despacho y cuántos viajes activos hay?',
     agente: 'FLOTA_DESPACHO',
   },
   {
-    icon: Users,
-    label: 'Comité: Pedido urgente 60 m³',
-    text: 'Tengo un pedido urgente de 60 m³ a 22 km en Quiulacocha. ¿Podemos atenderlo hoy con la flota disponible y cuál sería el costo de diésel?',
-    agente: 'SUPERVISOR',
+    icon: Package,
+    label: 'Pedidos: estado y volumen',
+    text: '¿Qué pedidos pendientes hay y qué materiales, volúmenes y destinos tienen?',
+    agente: 'GESTION_PEDIDOS',
+  },
+  {
+    icon: MapPinned,
+    label: 'Rutas: distancia y desnivel',
+    text: '¿Qué ruta hay desde Cantera Quiulacocha hacia Villa Pasco y qué distancia y desnivel tiene?',
+    agente: 'RUTAS_MAPAS',
+  },
+  {
+    icon: MapPinned,
+    label: 'Pedido: Ruta y diésel',
+    text: 'Tengo un pedido urgente de 60 m³ desde Cantera Quiulacocha hasta Villa Pasco. ¿Cuál sería el costo de diésel usando 21.75 toneladas como carga de referencia?',
   },
 ];
 

@@ -149,17 +149,18 @@ const mapearTrazaCopilot = (
     ? dato.pensamiento
     : `Paso ${indice + 1} sin pensamiento registrado.`;
   const parametros = esRegistro(dato.parametros) ? dato.parametros : {};
+  const agenteTraza = typeof dato.agente === 'string' ? dato.agente as AgentRole : agente;
 
   return {
     paso: indice + 1,
-    agente,
+    agente: agenteTraza,
     pensamiento,
     herramientaInvocada: herramienta,
     herramientaAmigable: nombreHerramienta(herramienta),
     descripcionAmigable: describirPaso(herramienta, parametros),
     parametrosValidados: parametros,
     observacionResumida: resumirResultado(herramienta, dato.resultado, parametros),
-    estado: 'EXITOSO',
+    estado: dato.estado === 'ERROR_CONTROLADO' ? 'ERROR_CONTROLADO' : 'EXITOSO',
   } satisfies ReActTraceStep;
 };
 
@@ -189,6 +190,7 @@ export class CopilotOrchestrator {
             mapearTrazaCopilot(traza, indice, response.rol)
           ),
           llamadasLLM: response.llamadas_llm,
+          agentesParticipantes: response.agentes_participantes ?? [response.rol],
         };
       }
       throw new Error('El backend devolvió una respuesta inválida para el Copiloto.');

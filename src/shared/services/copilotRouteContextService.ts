@@ -44,7 +44,8 @@ const stripAccents = (value: string): string =>
   value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 const cleanEndpoint = (value: string): string => {
-  const withoutTrailingFollowUp = value.split(
+  const withoutSentenceFollowUp = value.split(/[.!?;]\s*/)[0];
+  const withoutTrailingFollowUp = withoutSentenceFollowUp.split(
     /\s*(?:,?\s+y\s+)?(?:de\s+qu[eé]|qu[eé])\s+cantera\b/i,
   )[0];
   const withoutTrailingExplanation = withoutTrailingFollowUp.split(
@@ -116,7 +117,7 @@ function parseRouteQuery(message: string): ParsedRouteQuery | null {
   const roundTrip = /ida\s*y\s*vuelta|ida\s+y\s+retorno|retorno/.test(normalized);
 
   const connector = '(?:hacia|hasta|a|rumbo\\s+a)';
-  const cleanMessage = message.replace(/[¿?¡!]/g, '').trim();
+  const cleanMessage = message.replace(/[¿¡]/g, '').trim();
   let betweenMatch = cleanMessage.match(
     new RegExp(`\\bdesde\\s+(.+?)\\s+${connector}\\s+(.+)$`, 'i')
   );
@@ -151,8 +152,13 @@ function parseRouteQuery(message: string): ParsedRouteQuery | null {
         : null;
   }
 
-  if (originText && /combustible|consumo|diesel|di[eé]sel/.test(stripAccents(originText))) {
-    originText = null;
+  if (originText) {
+    const normalizedOrigin = stripAccents(originText);
+    const describesRouteInput =
+      /\b(?:pedido|carga|peso|volumen|ruta|distancia|kilometros?|km|m3|toneladas?|ton)\b/.test(
+        normalizedOrigin,
+      ) || /\d\s*(?:m3|km|ton(?:eladas?)?)\b/.test(normalizedOrigin);
+    if (describesRouteInput) originText = null;
   }
 
   return {
