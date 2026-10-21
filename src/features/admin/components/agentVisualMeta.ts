@@ -1,4 +1,4 @@
-import { Bot, Fuel, Truck, type LucideIcon } from 'lucide-react';
+import { Bot, Fuel, Truck, Package, MapPinned, type LucideIcon } from 'lucide-react';
 import type { AgentRole } from '../agents/types';
 
 export interface AgentVisualMeta {
@@ -16,6 +16,12 @@ export const DEFAULT_AGENT_VISUAL_META: AgentVisualMeta = {
 };
 
 export const AGENT_VISUAL_META: Record<AgentRole, AgentVisualMeta> = {
+  ORQUESTADOR: {
+    etiqueta: 'Orquestador',
+    icono: Bot,
+    claseBadge: 'bg-violet-500/15 text-violet-300 border-violet-500/30',
+    claseIcono: 'bg-violet-500/15 text-violet-400 border-violet-500/30',
+  },
   AUDITOR_ML: {
     etiqueta: 'Auditor ML',
     icono: Fuel,
@@ -28,8 +34,20 @@ export const AGENT_VISUAL_META: Record<AgentRole, AgentVisualMeta> = {
     claseBadge: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
     claseIcono: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
   },
+  GESTION_PEDIDOS: {
+    etiqueta: 'Gestión de Pedidos',
+    icono: Package,
+    claseBadge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+    claseIcono: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  },
+  RUTAS_MAPAS: {
+    etiqueta: 'Rutas y Maps',
+    icono: MapPinned,
+    claseBadge: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
+    claseIcono: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
+  },
   SUPERVISOR: {
-    etiqueta: 'Supervisor',
+    etiqueta: 'Orquestador (compatibilidad)',
     icono: Bot,
     claseBadge: 'bg-violet-500/15 text-violet-300 border-violet-500/30',
     claseIcono: 'bg-violet-500/15 text-violet-400 border-violet-500/30',

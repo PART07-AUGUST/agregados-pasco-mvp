@@ -10,10 +10,10 @@ const INITIAL_MESSAGES: CopilotChatMessage[] = [
   {
     id: 'bienvenida',
     role: 'assistant',
-    agente: 'SUPERVISOR',
-    nombreAgente: 'Supervisor de Operaciones',
+    agente: 'ORQUESTADOR',
+    nombreAgente: 'Orquestador SIS-AGREGADOS',
     content:
-      'Hola. Coordino a un **Auditor de Combustible ML** y a un **Jefe de Flota**. Pregúntame por consumo de diésel, anomalías, volquetes o pedidos y derivaré tu consulta al especialista adecuado.',
+      'Hola. Soy el **Orquestador SIS-AGREGADOS**. Coordino especialistas en flota y despacho, pedidos, combustible/ML y rutas/Maps. Escribe tu consulta y la derivaré automáticamente; también puedes elegir un especialista con los accesos rápidos.',
   },
 ];
 
@@ -67,6 +67,7 @@ export function useAdminCopilot() {
             agente: resultado.rol,
             nombreAgente: resultado.nombre,
             trazas: resultado.trazas,
+            agentesParticipantes: resultado.agentesParticipantes,
           },
         ]);
       } catch (err: unknown) {

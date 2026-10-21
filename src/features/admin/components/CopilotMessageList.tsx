@@ -48,6 +48,13 @@ export function CopilotMessageList({ messages, isGenerating }: CopilotMessageLis
                   <CopilotAgentBadge agente={msg.agente} />
                 </div>
               )}
+              {!isUser && msg.agentesParticipantes && msg.agentesParticipantes.length > 1 && (
+                <div className="mb-2 flex flex-wrap gap-1" aria-label="Especialistas participantes">
+                  {msg.agentesParticipantes.map((agente) => (
+                    <CopilotAgentBadge key={agente} agente={agente} />
+                  ))}
+                </div>
+              )}
               {isUser ? msg.content : <CopilotMarkdownRenderer content={msg.content} />}
               {!isUser && msg.trazas && msg.trazas.length > 0 && (
                 <CopilotTracePanel trazas={msg.trazas} />
