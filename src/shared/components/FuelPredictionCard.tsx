@@ -148,6 +148,19 @@ export function FuelPredictionCard({
           showSkeleton={showSkeleton}
         />
       </div>
+      {prediction?.prediccionesModelos && prediction.prediccionesModelos.length > 0 && (
+        <div className="space-y-1 border-t border-amber-500/10 pt-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+            Comparación al despachar
+          </p>
+          {prediction.prediccionesModelos.map((model) => (
+            <div key={`${model.version}-${model.algoritmo}`} className="flex justify-between gap-3 text-[10px]">
+              <span className="text-slate-400">{model.algoritmo.replaceAll('_', ' ')}</span>
+              <span className="font-mono text-slate-200">{model.consumoDieselGalones.toFixed(2)} gal</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

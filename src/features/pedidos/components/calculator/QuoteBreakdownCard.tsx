@@ -41,7 +41,10 @@ export function QuoteBreakdownCard({
   onApply,
 }: QuoteBreakdownCardProps) {
   const predictionInput = createQuoteFuelInput(quote, totalVolumenM3);
-  const { prediction, predictionLoading, predictionError } = useFuelPrediction(predictionInput);
+  const { prediction, predictionLoading, predictionError } = useFuelPrediction(
+    isAdmin ? predictionInput : null,
+    isAdmin
+  );
 
   return (
     <div
@@ -142,7 +145,7 @@ export function QuoteBreakdownCard({
         </div>
       </div>
 
-      {(loading || quote) && (
+      {isAdmin && (loading || quote) && (
         <FuelPredictionCard
           routeLoading={loading}
           prediction={loading ? null : prediction}

@@ -1,22 +1,50 @@
 import { useState } from 'react';
-import { Scale, Activity } from 'lucide-react';
-import type { ViajeDetallado } from '../../../shared/services/tripsService';
+import { Scale, Activity, Loader2 } from 'lucide-react';
+import { tripsService, type ViajeDetallado } from '../../../shared/services/tripsService';
 import { getMaterialLabel } from '../../../shared/constants/materials';
 import { Pagination } from '../../../shared/components/Pagination';
 
 interface TripsListProps {
   trips: ViajeDetallado[];
+  onActualFuelSaved: () => void;
 }
 
 const ITEMS_PER_PAGE = 10;
 
-export function TripsList({ trips }: TripsListProps) {
+export function TripsList({ trips, onActualFuelSaved }: TripsListProps) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [actualFuelValues, setActualFuelValues] = useState<Record<string, string>>({});
+  const [savingTripId, setSavingTripId] = useState<string | null>(null);
+  const [fuelMessage, setFuelMessage] = useState<{ tripId: string; text: string; error: boolean } | null>(null);
 
   const totalPages = Math.ceil(trips.length / ITEMS_PER_PAGE) || 1;
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, trips.length);
   const currentTrips = trips.slice(startIndex, endIndex);
+
+  const saveActualFuel = async (trip: ViajeDetallado) => {
+    const actualFuel = Number(actualFuelValues[trip.id] ?? trip.consumoDieselReal ?? 0);
+    if (!Number.isFinite(actualFuel) || actualFuel <= 0 || actualFuel > 1000) {
+      setFuelMessage({ tripId: trip.id, text: 'Ingresa galones medidos entre 0 y 1000.', error: true });
+      return;
+    }
+
+    setSavingTripId(trip.id);
+    setFuelMessage(null);
+    try {
+      await tripsService.recordActualFuel(trip.id, actualFuel);
+      setFuelMessage({
+        tripId: trip.id,
+        text: 'Consumo guardado. Si cambió, la evaluación ML se procesa en segundo plano.',
+        error: false,
+      });
+      onActualFuelSaved();
+    } catch {
+      setFuelMessage({ tripId: trip.id, text: 'No se pudo guardar el consumo medido.', error: true });
+    } finally {
+      setSavingTripId(null);
+    }
+  };
 
   return (
     <div className="bg-slate-900/30 border border-slate-900 rounded-3xl overflow-hidden">
@@ -55,6 +83,7 @@ export function TripsList({ trips }: TripsListProps) {
                 <th className="py-3 px-4">Pesaje Entrada</th>
                 <th className="py-3 px-4">Pesaje Salida</th>
                 <th className="py-3 px-4">Diésel Est. (ML)</th>
+                <th className="py-3 px-4">Diésel real (admin)</th>
                 <th className="py-3 px-4">Estado</th>
               </tr>
             </thead>
@@ -99,6 +128,41 @@ export function TripsList({ trips }: TripsListProps) {
                       </div>
                     ) : (
                       <span className="text-slate-600">--</span>
+                    )}
+                  </td>
+                  <td className="py-3.5 px-4 min-w-52">
+                    {t.estado === 'ENTREGADO' ? (
+                      <div className="flex items-center gap-1.5">
+                        <label className="sr-only" htmlFor={`actual-fuel-${t.id}`}>
+                          Galones medidos para viaje {t.id.slice(0, 8)}
+                        </label>
+                        <input
+                          id={`actual-fuel-${t.id}`}
+                          type="number"
+                          min="0.01"
+                          max="1000"
+                          step="0.01"
+                          value={actualFuelValues[t.id] ?? t.consumoDieselReal?.toString() ?? ''}
+                          onChange={(event) => setActualFuelValues((current) => ({ ...current, [t.id]: event.target.value }))}
+                          placeholder="Galones"
+                          className="w-24 rounded-lg border border-slate-800 bg-slate-950 px-2 py-1.5 text-[10px] text-white outline-none focus:border-amber-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void saveActualFuel(t)}
+                          disabled={savingTripId === t.id}
+                          className="rounded-lg bg-amber-500 px-2 py-1.5 text-[10px] font-bold text-slate-950 disabled:opacity-60"
+                        >
+                          {savingTripId === t.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Guardar'}
+                        </button>
+                        {fuelMessage?.tripId === t.id && (
+                          <span role={fuelMessage.error ? 'alert' : 'status'} className={`max-w-44 text-[9px] ${fuelMessage.error ? 'text-rose-300' : 'text-emerald-300'}`}>
+                            {fuelMessage.text}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-slate-600">Disponible tras la entrega</span>
                     )}
                   </td>
                   <td className="py-3.5 px-4">

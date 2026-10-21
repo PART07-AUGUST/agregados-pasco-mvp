@@ -60,6 +60,7 @@ export interface Viaje extends BaseEntity {
   distanciaKm?: number;
   desnivelMetros?: number;
   canteraOrigen?: string;
+  fuenteRuta?: 'graphhopper' | 'aproximada' | 'legacy';
   volumenCargaEstimadoM3?: number;
   consumoDieselEstimado?: number;
   costoDieselEstimadoSoles?: number;

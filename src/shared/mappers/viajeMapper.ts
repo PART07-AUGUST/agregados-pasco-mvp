@@ -32,6 +32,7 @@ export const viajeMapper = {
       distanciaKm: dto.distancia_km != null ? Number(dto.distancia_km) : undefined,
       desnivelMetros: dto.desnivel_metros != null ? Number(dto.desnivel_metros) : undefined,
       canteraOrigen: dto.cantera_origen ?? undefined,
+      fuenteRuta: dto.fuente_ruta ?? 'legacy',
       volumenCargaEstimadoM3:
         dto.volumen_carga_estimado_m3 != null
           ? Number(dto.volumen_carga_estimado_m3)
@@ -66,6 +67,7 @@ export const viajeMapper = {
       distanciaKm?: number;
       desnivelMetros?: number;
       canteraOrigen?: string;
+      fuenteRuta?: 'graphhopper' | 'aproximada' | 'legacy';
     }
   ): ViajeCreateDto {
     return {
@@ -75,6 +77,7 @@ export const viajeMapper = {
       distancia_km: route?.distanciaKm ?? null,
       desnivel_metros: route?.desnivelMetros ?? null,
       cantera_origen: route?.canteraOrigen ?? null,
+      fuente_ruta: route?.fuenteRuta ?? 'legacy',
     };
   },
 
