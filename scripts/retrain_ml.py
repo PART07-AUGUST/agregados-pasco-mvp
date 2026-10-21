@@ -7,6 +7,7 @@ import sys
 from datetime import UTC, datetime
 from io import BytesIO
 from typing import Any
+from urllib.parse import urlparse
 
 import joblib
 import numpy as np
@@ -57,25 +58,56 @@ def prepare_training_data(
     trips: list[dict[str, Any]],
     orders: list[dict[str, Any]],
     vehicles: list[dict[str, Any]],
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, dict[str, int]]:
+    diagnostics = {
+        "filas_viajes_api": len(trips),
+        "pedidos_sin_volumen_numerico": 0,
+        "vehiculos_sin_capacidad_numerica": 0,
+    }
     trip_data = pd.DataFrame(trips)
     order_data = pd.DataFrame(orders)
     vehicle_data = pd.DataFrame(vehicles)
+    if not order_data.empty:
+        diagnostics["pedidos_sin_volumen_numerico"] = int(
+            pd.to_numeric(order_data["volumen_m3"], errors="coerce").isna().sum()
+        )
+    if not vehicle_data.empty:
+        diagnostics["vehiculos_sin_capacidad_numerica"] = int(
+            pd.to_numeric(vehicle_data["capacidad_m3"], errors="coerce").isna().sum()
+        )
 
     if trip_data.empty or order_data.empty or vehicle_data.empty:
-        return pd.DataFrame()
+        diagnostics.update(
+            {
+                "filas_despues_join_pedidos": 0,
+                "filas_despues_join_vehiculos": 0,
+                "filas_sin_distancia_numerica": 0,
+                "filas_sin_carga_calculable": 0,
+                "filas_sin_consumo_numerico": 0,
+                "filas_sin_fecha_valida": 0,
+                "filas_despues_campos_requeridos": 0,
+                "filas_despues_filtro_distancia": 0,
+                "filas_despues_filtro_desnivel": 0,
+                "filas_despues_filtro_carga": 0,
+                "filas_despues_filtro_consumo": 0,
+            }
+        )
+        return pd.DataFrame(), diagnostics
 
     dataset = trip_data.merge(
         order_data[["id", "volumen_m3"]],
         left_on="pedido_id",
         right_on="id",
         suffixes=("", "_pedido"),
-    ).merge(
+    )
+    diagnostics["filas_despues_join_pedidos"] = len(dataset)
+    dataset = dataset.merge(
         vehicle_data[["id", "capacidad_m3"]],
         left_on="vehiculo_id",
         right_on="id",
         suffixes=("", "_vehiculo"),
     )
+    diagnostics["filas_despues_join_vehiculos"] = len(dataset)
 
     for column in (
         "distancia_km",
@@ -96,18 +128,35 @@ def prepare_training_data(
         errors="coerce",
         utc=True,
     )
+    diagnostics["filas_sin_distancia_numerica"] = int(
+        dataset["distancia_km"].isna().sum()
+    )
+    diagnostics["filas_sin_carga_calculable"] = int(
+        dataset["peso_carga_ton"].isna().sum()
+    )
+    diagnostics["filas_sin_consumo_numerico"] = int(
+        dataset["consumo_diesel_real"].isna().sum()
+    )
+    diagnostics["filas_sin_fecha_valida"] = int(dataset["fecha_orden"].isna().sum())
     dataset = dataset.dropna(
         subset=["distancia_km", "peso_carga_ton", "consumo_diesel_real", "fecha_orden"]
     )
+    diagnostics["filas_despues_campos_requeridos"] = len(dataset)
     dataset = dataset.loc[
         (dataset["distancia_km"] > 0)
         & (dataset["distancia_km"] <= 1000)
-        & (dataset["desnivel_metros"].abs() <= 4000)
-        & (dataset["peso_carga_ton"] > 0)
-        & (dataset["peso_carga_ton"] <= 60)
-        & (dataset["consumo_diesel_real"] > 0)
     ]
-    return dataset.sort_values("fecha_orden", kind="mergesort").reset_index(drop=True)
+    diagnostics["filas_despues_filtro_distancia"] = len(dataset)
+    dataset = dataset.loc[dataset["desnivel_metros"].abs() <= 4000]
+    diagnostics["filas_despues_filtro_desnivel"] = len(dataset)
+    dataset = dataset.loc[
+        (dataset["peso_carga_ton"] > 0) & (dataset["peso_carga_ton"] <= 60)
+    ]
+    diagnostics["filas_despues_filtro_carga"] = len(dataset)
+    dataset = dataset.loc[dataset["consumo_diesel_real"] > 0]
+    diagnostics["filas_despues_filtro_consumo"] = len(dataset)
+    dataset = dataset.sort_values("fecha_orden", kind="mergesort").reset_index(drop=True)
+    return dataset, diagnostics
 
 
 def split_recent_holdout(dataset: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -196,7 +245,7 @@ def serialize_artifact(model: Any) -> str:
     return base64.b64encode(model_buffer.getvalue()).decode("ascii")
 
 
-def fetch_training_data(supabase: Client) -> pd.DataFrame:
+def fetch_training_data(supabase: Client) -> tuple[pd.DataFrame, dict[str, int]]:
     trip_response = (
         supabase.table("viajes")
         .select(
@@ -210,28 +259,76 @@ def fetch_training_data(supabase: Client) -> pd.DataFrame:
         .execute()
     )
     trips = trip_response.data or []
-    if not trips:
-        return pd.DataFrame()
+    order_ids = list({trip["pedido_id"] for trip in trips if trip["pedido_id"]})
+    vehicle_ids = list({trip["vehiculo_id"] for trip in trips if trip["vehiculo_id"]})
+    orders = []
+    if order_ids:
+        orders = (
+            supabase.table("pedidos")
+            .select("id, volumen_m3")
+            .in_("id", order_ids)
+            .execute()
+            .data
+            or []
+        )
+    vehicles = []
+    if vehicle_ids:
+        vehicles = (
+            supabase.table("vehiculos")
+            .select("id, capacidad_m3")
+            .in_("id", vehicle_ids)
+            .execute()
+            .data
+            or []
+        )
+    dataset, diagnostics = prepare_training_data(trips, orders, vehicles)
+    diagnostics.update(
+        {
+            "viajes_sin_pedido_id": sum(not trip["pedido_id"] for trip in trips),
+            "viajes_sin_vehiculo_id": sum(not trip["vehiculo_id"] for trip in trips),
+            "pedidos_ids_solicitados": len(order_ids),
+            "pedidos_recibidos": len(orders),
+            "pedidos_ids_no_encontrados": len(order_ids) - len(orders),
+            "vehiculos_ids_solicitados": len(vehicle_ids),
+            "vehiculos_recibidos": len(vehicles),
+            "vehiculos_ids_no_encontrados": len(vehicle_ids) - len(vehicles),
+        }
+    )
+    return dataset, diagnostics
 
-    order_ids = list({trip["pedido_id"] for trip in trips})
-    vehicle_ids = list({trip["vehiculo_id"] for trip in trips})
-    orders = (
-        supabase.table("pedidos")
-        .select("id, volumen_m3")
-        .in_("id", order_ids)
-        .execute()
-        .data
-        or []
+
+def print_training_diagnostics(
+    project_host: str, diagnostics: dict[str, int], valid_rows: int
+) -> None:
+    print(f"Proyecto Supabase (host): {project_host}")
+    print("Diagnóstico del conjunto de entrenamiento:")
+    diagnostic_labels = (
+        ("filas_viajes_api", "Viajes devueltos por la API"),
+        ("viajes_sin_pedido_id", "Viajes sin pedido_id"),
+        ("viajes_sin_vehiculo_id", "Viajes sin vehiculo_id"),
+        ("pedidos_ids_solicitados", "IDs de pedidos solicitados"),
+        ("pedidos_recibidos", "Pedidos devueltos por la API"),
+        ("pedidos_ids_no_encontrados", "IDs de pedidos no encontrados"),
+        ("pedidos_sin_volumen_numerico", "Pedidos sin volumen numérico"),
+        ("vehiculos_ids_solicitados", "IDs de vehículos solicitados"),
+        ("vehiculos_recibidos", "Vehículos devueltos por la API"),
+        ("vehiculos_ids_no_encontrados", "IDs de vehículos no encontrados"),
+        ("vehiculos_sin_capacidad_numerica", "Vehículos sin capacidad numérica"),
+        ("filas_despues_join_pedidos", "Filas después de unir pedidos"),
+        ("filas_despues_join_vehiculos", "Filas después de unir vehículos"),
+        ("filas_sin_distancia_numerica", "Filas sin distancia numérica (pueden solaparse)"),
+        ("filas_sin_carga_calculable", "Filas sin carga calculable (pueden solaparse)"),
+        ("filas_sin_consumo_numerico", "Filas sin consumo numérico (pueden solaparse)"),
+        ("filas_sin_fecha_valida", "Filas sin fecha válida (pueden solaparse)"),
+        ("filas_despues_campos_requeridos", "Filas con campos requeridos y fecha válidos"),
+        ("filas_despues_filtro_distancia", "Filas después del filtro de distancia"),
+        ("filas_despues_filtro_desnivel", "Filas después del filtro de desnivel"),
+        ("filas_despues_filtro_carga", "Filas después del filtro de carga"),
+        ("filas_despues_filtro_consumo", "Filas después del filtro de consumo"),
     )
-    vehicles = (
-        supabase.table("vehiculos")
-        .select("id, capacidad_m3")
-        .in_("id", vehicle_ids)
-        .execute()
-        .data
-        or []
-    )
-    return prepare_training_data(trips, orders, vehicles)
+    for key, label in diagnostic_labels:
+        print(f"  {label}: {diagnostics.get(key, 0)}")
+    print(f"  Total válido para entrenamiento: {valid_rows}")
 
 
 def load_reference_coefficients(supabase: Client) -> dict[str, float]:
@@ -385,7 +482,9 @@ def run_retraining() -> None:
         raise RuntimeError("Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY.")
 
     supabase = create_client(supabase_url, service_role_key)
-    dataset = fetch_training_data(supabase)
+    dataset, diagnostics = fetch_training_data(supabase)
+    project_host = urlparse(supabase_url).hostname or "no disponible"
+    print_training_diagnostics(project_host, diagnostics, len(dataset))
     print(f"Viajes entregados válidos para entrenamiento: {len(dataset)}")
     if len(dataset) < MINIMUM_TRAINING_ROWS:
         print(

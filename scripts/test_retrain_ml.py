@@ -34,7 +34,7 @@ class RetrainMlTests(unittest.TestCase):
     def test_training_load_uses_order_volume_and_assigned_vehicle_capacity(
         self,
     ) -> None:
-        dataset = prepare_training_data(
+        dataset, diagnostics = prepare_training_data(
             [
                 {
                     "id": "trip-1",
@@ -53,6 +53,55 @@ class RetrainMlTests(unittest.TestCase):
 
         self.assertEqual(float(dataset.iloc[0]["volumen_carga_m3"]), 15)
         self.assertEqual(float(dataset.iloc[0]["peso_carga_ton"]), 21.75)
+        self.assertEqual(diagnostics["filas_despues_filtro_consumo"], 1)
+
+    def test_training_diagnostics_identify_each_removed_data_stage(self) -> None:
+        trips = []
+        orders = []
+        vehicles = []
+        for index in range(8):
+            trip_id = f"trip-{index}"
+            pedido_id = f"order-{index}"
+            vehiculo_id = f"truck-{index}"
+            trips.append(
+                {
+                    "id": trip_id,
+                    "pedido_id": "missing-order" if index == 1 else pedido_id,
+                    "vehiculo_id": "missing-truck" if index == 2 else vehiculo_id,
+                    "distancia_km": 0 if index == 3 else 20,
+                    "desnivel_metros": 4501 if index == 5 else 80,
+                    "consumo_diesel_real": 0 if index == 7 else 8,
+                    "fecha_entrega": "invalid-date" if index == 4 else "2026-01-02T00:00:00Z",
+                    "fecha_asignacion": "2026-01-01T00:00:00Z",
+                }
+            )
+            if index != 1:
+                orders.append(
+                    {
+                        "id": pedido_id,
+                        "volumen_m3": 50 if index == 6 else 10,
+                    }
+                )
+            if index != 2:
+                vehicles.append(
+                    {
+                        "id": vehiculo_id,
+                        "capacidad_m3": 50 if index == 6 else 10,
+                    }
+                )
+
+        dataset, diagnostics = prepare_training_data(trips, orders, vehicles)
+
+        self.assertEqual(len(dataset), 1)
+        self.assertEqual(diagnostics["filas_viajes_api"], 8)
+        self.assertEqual(diagnostics["filas_despues_join_pedidos"], 7)
+        self.assertEqual(diagnostics["filas_despues_join_vehiculos"], 6)
+        self.assertEqual(diagnostics["filas_sin_fecha_valida"], 1)
+        self.assertEqual(diagnostics["filas_despues_campos_requeridos"], 5)
+        self.assertEqual(diagnostics["filas_despues_filtro_distancia"], 4)
+        self.assertEqual(diagnostics["filas_despues_filtro_desnivel"], 3)
+        self.assertEqual(diagnostics["filas_despues_filtro_carga"], 2)
+        self.assertEqual(diagnostics["filas_despues_filtro_consumo"], 1)
 
     def test_metrics_match_served_minimum_fuel(self) -> None:
         metrics = score_predictions(pd.Series([0.5, 1.23]), np.array([-1.0, 1.23]))
