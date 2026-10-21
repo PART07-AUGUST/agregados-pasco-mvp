@@ -60,7 +60,11 @@ export interface Viaje extends BaseEntity {
   distanciaKm?: number;
   desnivelMetros?: number;
   canteraOrigen?: string;
+  volumenCargaEstimadoM3?: number;
   consumoDieselEstimado?: number;
+  costoDieselEstimadoSoles?: number;
+  precioGalonAplicadoSoles?: number;
+  modeloMlVersion?: string;
   consumoDieselReal?: number;
 }
 

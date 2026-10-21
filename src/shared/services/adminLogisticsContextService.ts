@@ -130,13 +130,13 @@ DATOS OPERATIVOS EN TIEMPO REAL DESDE LA BASE DE DATOS:
 - Conductores en operación o ruta: ${snapshot.conductoresEnRuta}.
 - Despachos en curso: ${snapshot.viajesActivos}.
 - Pedidos de clientes pendientes de atención: ${snapshot.pedidosPendientes}.
-- Auditoría de combustible según modelo de Machine Learning (R² 97.9%, MAE 0.289 gal):
+- Auditoría de combustible basada en las estimaciones guardadas en los viajes:
 ${anomaliasTexto}
 
 REGLAS DE RESPUESTA:
 1. Responde siempre en español.
 2. Si te preguntan por anomalías o sobrecostos de combustible, menciona los viajes específicos detectados arriba y sugiere posibles causas operativas (pendientes empinadas, ralentí en mina, fugas o estado de trocha).
-3. Si te preguntan sobre cálculo de diésel o la fórmula del modelo, presenta la fórmula matemática en formato legible o código: \`Consumo (gal) = 0.2889 × Distancia(km) + 0.0405 × Carga(ton) + 0.00071 × Desnivel(m)\`. NUNCA uses comandos de LaTeX como \\text{}, $, ni barras invertidas.
+3. Si te preguntan por el algoritmo o su precisión, explica solo las métricas disponibles en los datos consultados. No inventes una fórmula ni valores de R² o MAE.
 4. Mantén las respuestas en un máximo de 3 a 5 oraciones estructuradas.
 5. SEGURIDAD ESTRICTA: Tu acceso a la base de datos es exclusivamente de consulta y lectura informativa (SELECT). No tienes permisos ni capacidades para modificar, crear o eliminar tablas, campos o registros.`;
   }

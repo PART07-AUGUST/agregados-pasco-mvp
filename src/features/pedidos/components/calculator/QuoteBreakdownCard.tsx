@@ -15,6 +15,22 @@ interface QuoteBreakdownCardProps {
   onApply?: () => void;
 }
 
+function createQuoteFuelInput(
+  quote: RouteCalculationResult | null,
+  totalVolumenM3: number
+) {
+  if (!quote) return null;
+
+  const cantidadViajes = Math.max(1, quote.totalTrips ?? 1);
+  const volumenPorViaje = totalVolumenM3 / cantidadViajes;
+  return {
+    ...fuelPredictionService.estimateTripParams(volumenPorViaje),
+    distanciaKm: quote.distanceKm,
+    desnivelMetros: quote.ascendMeters ?? 0,
+    cantidadViajes,
+  };
+}
+
 // react-doctor-disable-next-line no-high-complexity-react-function
 export function QuoteBreakdownCard({
   quote,
@@ -24,13 +40,7 @@ export function QuoteBreakdownCard({
   onClose,
   onApply,
 }: QuoteBreakdownCardProps) {
-  const predictionInput = quote
-    ? {
-        ...fuelPredictionService.estimateTripParams(totalVolumenM3),
-        distanciaKm: quote.distanceKm,
-        desnivelMetros: quote.ascendMeters ?? 0,
-      }
-    : null;
+  const predictionInput = createQuoteFuelInput(quote, totalVolumenM3);
   const { prediction, predictionLoading, predictionError } = useFuelPrediction(predictionInput);
 
   return (

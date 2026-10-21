@@ -38,7 +38,10 @@ function getStoredRoute(order: Pick<Pedido, 'distanciaKm' | 'desnivelMetros' | '
   };
 }
 
-export function useTripFuelPrediction(order: Pedido): TripFuelPredictionState {
+export function useTripFuelPrediction(
+  order: Pedido,
+  capacidadVehiculoM3?: number
+): TripFuelPredictionState {
   const {
     canteraOrigen,
     destino,
@@ -51,7 +54,10 @@ export function useTripFuelPrediction(order: Pedido): TripFuelPredictionState {
   const [routeMessage, setRouteMessage] = useState<string | null>(null);
   const predictionInput = route
     ? {
-        ...fuelPredictionService.estimateTripParams(volumenM3),
+        ...fuelPredictionService.estimateTripParams(
+          volumenM3,
+          capacidadVehiculoM3 ?? volumenM3
+        ),
         distanciaKm: route.distanciaKm,
         desnivelMetros: route.desnivelMetros,
       }

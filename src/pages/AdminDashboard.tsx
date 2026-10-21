@@ -5,7 +5,8 @@ import {
   ShieldAlert, 
   LogOut, 
   Activity, 
-  Users
+  Users,
+  BrainCircuit,
 } from 'lucide-react';
 import { TripAssignModal } from '../features/viajes/components/TripAssignModal';
 import { TripsList } from '../features/viajes/components/TripsList';
@@ -19,12 +20,14 @@ import { useAdminCopilot } from '../features/admin/hooks/useAdminCopilot';
 import { CopilotTriggerButton } from '../features/admin/components/CopilotTriggerButton';
 import { AdminCopilotModal } from '../features/admin/components/AdminCopilotModal';
 import { ShimmerSkeleton } from '../shared/components/ShimmerSkeleton';
+import { MlComparisonPanel } from '../features/admin/components/MlComparisonPanel';
 
 const DASHBOARD_TABS = [
   { id: 'monitoreo', label: 'Monitoreo de Despacho', icon: Activity },
   { id: 'flota', label: 'Flota Vehicular', icon: Truck },
   { id: 'conductores', label: 'Conductores', icon: Users },
   { id: 'pedidos', label: 'Pedidos de Obra', icon: ClipboardList },
+  { id: 'machine-learning', label: 'Machine Learning', icon: BrainCircuit },
 ] as const;
 
 function AdminDashboardLoadingSkeleton({ activeTab }: { activeTab: string }) {
@@ -241,6 +244,8 @@ export function AdminDashboard() {
                 onFormCancel={() => setShowOrderForm(false)}
               />
             )}
+
+            {activeTab === 'machine-learning' && <MlComparisonPanel />}
           </div>
         )}
 
