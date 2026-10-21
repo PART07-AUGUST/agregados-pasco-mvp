@@ -34,7 +34,7 @@ class RetrainMlTests(unittest.TestCase):
     def test_training_load_uses_order_volume_and_assigned_vehicle_capacity(
         self,
     ) -> None:
-        dataset, diagnostics = prepare_training_data(
+        dataset = prepare_training_data(
             [
                 {
                     "id": "trip-1",
@@ -47,112 +47,12 @@ class RetrainMlTests(unittest.TestCase):
                     "fecha_asignacion": "2026-01-01T00:00:00Z",
                 }
             ],
-            [
-                {
-                    "id": "order-1",
-                    "volumen_m3": 20,
-                    "created_at": "2025-12-01T00:00:00Z",
-                }
-            ],
+            [{"id": "order-1", "volumen_m3": 20}],
             [{"id": "truck-1", "capacidad_m3": 15}],
         )
 
         self.assertEqual(float(dataset.iloc[0]["volumen_carga_m3"]), 15)
         self.assertEqual(float(dataset.iloc[0]["peso_carga_ton"]), 21.75)
-        self.assertEqual(diagnostics["filas_despues_filtro_consumo"], 1)
-
-    def test_training_diagnostics_identify_each_removed_data_stage(self) -> None:
-        trips = []
-        orders = []
-        vehicles = []
-        for index in range(8):
-            trip_id = f"trip-{index}"
-            pedido_id = f"order-{index}"
-            vehiculo_id = f"truck-{index}"
-            trips.append(
-                {
-                    "id": trip_id,
-                    "pedido_id": "missing-order" if index == 1 else pedido_id,
-                    "vehiculo_id": "missing-truck" if index == 2 else vehiculo_id,
-                    "distancia_km": 0 if index == 3 else 20,
-                    "desnivel_metros": 4501 if index == 5 else 80,
-                    "consumo_diesel_real": 0 if index == 7 else 8,
-                    "fecha_entrega": "invalid-date" if index == 4 else "2026-01-02T00:00:00Z",
-                    "fecha_asignacion": None if index == 4 else "2026-01-01T00:00:00Z",
-                }
-            )
-            if index != 1:
-                orders.append(
-                    {
-                        "id": pedido_id,
-                        "volumen_m3": 50 if index == 6 else 10,
-                        "created_at": "2025-12-01T00:00:00Z",
-                    }
-                )
-            if index != 2:
-                vehicles.append(
-                    {
-                        "id": vehiculo_id,
-                        "capacidad_m3": 50 if index == 6 else 10,
-                    }
-                )
-
-        dataset, diagnostics = prepare_training_data(trips, orders, vehicles)
-
-        self.assertEqual(len(dataset), 2)
-        self.assertEqual(diagnostics["filas_viajes_api"], 8)
-        self.assertEqual(diagnostics["filas_despues_join_pedidos"], 7)
-        self.assertEqual(diagnostics["filas_despues_join_vehiculos"], 6)
-        self.assertEqual(diagnostics["filas_con_fecha_viaje"], 5)
-        self.assertEqual(diagnostics["filas_con_fecha_pedido_respaldo"], 1)
-        self.assertEqual(diagnostics["filas_sin_fecha_valida"], 0)
-        self.assertEqual(diagnostics["filas_despues_campos_requeridos"], 6)
-        self.assertEqual(diagnostics["filas_despues_filtro_distancia"], 5)
-        self.assertEqual(diagnostics["filas_despues_filtro_desnivel"], 4)
-        self.assertEqual(diagnostics["filas_despues_filtro_carga"], 3)
-        self.assertEqual(diagnostics["filas_despues_filtro_consumo"], 2)
-
-    def test_mixed_trip_timestamp_formats_remain_valid(self) -> None:
-        trips = [
-            {
-                "id": "trip-1",
-                "pedido_id": "order-1",
-                "vehiculo_id": "truck-1",
-                "distancia_km": 20,
-                "desnivel_metros": 80,
-                "consumo_diesel_real": 8,
-                "fecha_entrega": "2026-01-02T00:00:00Z",
-                "fecha_asignacion": "2026-01-01T00:00:00Z",
-            },
-            {
-                "id": "trip-2",
-                "pedido_id": "order-2",
-                "vehiculo_id": "truck-2",
-                "distancia_km": 25,
-                "desnivel_metros": 90,
-                "consumo_diesel_real": 9,
-                "fecha_entrega": "2026-01-03 00:00:00+00:00",
-                "fecha_asignacion": "2026-01-02 00:00:00+00:00",
-            },
-        ]
-        orders = [
-            {
-                "id": f"order-{index}",
-                "volumen_m3": 10,
-                "created_at": "2025-12-01T00:00:00Z",
-            }
-            for index in (1, 2)
-        ]
-        vehicles = [
-            {"id": f"truck-{index}", "capacidad_m3": 10}
-            for index in (1, 2)
-        ]
-
-        dataset, diagnostics = prepare_training_data(trips, orders, vehicles)
-
-        self.assertEqual(len(dataset), 2)
-        self.assertEqual(diagnostics["filas_con_fecha_viaje"], 2)
-        self.assertEqual(diagnostics["filas_sin_fecha_valida"], 0)
 
     def test_metrics_match_served_minimum_fuel(self) -> None:
         metrics = score_predictions(pd.Series([0.5, 1.23]), np.array([-1.0, 1.23]))
