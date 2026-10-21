@@ -112,6 +112,48 @@ class RetrainMlTests(unittest.TestCase):
         self.assertEqual(diagnostics["filas_despues_filtro_carga"], 3)
         self.assertEqual(diagnostics["filas_despues_filtro_consumo"], 2)
 
+    def test_mixed_trip_timestamp_formats_remain_valid(self) -> None:
+        trips = [
+            {
+                "id": "trip-1",
+                "pedido_id": "order-1",
+                "vehiculo_id": "truck-1",
+                "distancia_km": 20,
+                "desnivel_metros": 80,
+                "consumo_diesel_real": 8,
+                "fecha_entrega": "2026-01-02T00:00:00Z",
+                "fecha_asignacion": "2026-01-01T00:00:00Z",
+            },
+            {
+                "id": "trip-2",
+                "pedido_id": "order-2",
+                "vehiculo_id": "truck-2",
+                "distancia_km": 25,
+                "desnivel_metros": 90,
+                "consumo_diesel_real": 9,
+                "fecha_entrega": "2026-01-03 00:00:00+00:00",
+                "fecha_asignacion": "2026-01-02 00:00:00+00:00",
+            },
+        ]
+        orders = [
+            {
+                "id": f"order-{index}",
+                "volumen_m3": 10,
+                "created_at": "2025-12-01T00:00:00Z",
+            }
+            for index in (1, 2)
+        ]
+        vehicles = [
+            {"id": f"truck-{index}", "capacidad_m3": 10}
+            for index in (1, 2)
+        ]
+
+        dataset, diagnostics = prepare_training_data(trips, orders, vehicles)
+
+        self.assertEqual(len(dataset), 2)
+        self.assertEqual(diagnostics["filas_con_fecha_viaje"], 2)
+        self.assertEqual(diagnostics["filas_sin_fecha_valida"], 0)
+
     def test_metrics_match_served_minimum_fuel(self) -> None:
         metrics = score_predictions(pd.Series([0.5, 1.23]), np.array([-1.0, 1.23]))
 

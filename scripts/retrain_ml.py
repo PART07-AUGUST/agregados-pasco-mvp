@@ -73,7 +73,12 @@ def prepare_training_data(
             pd.to_numeric(order_data["volumen_m3"], errors="coerce").isna().sum()
         )
         diagnostics["pedidos_sin_fecha_creacion"] = int(
-            pd.to_datetime(order_data["created_at"], errors="coerce", utc=True)
+            pd.to_datetime(
+                order_data["created_at"],
+                errors="coerce",
+                format="mixed",
+                utc=True,
+            )
             .isna()
             .sum()
         )
@@ -132,13 +137,15 @@ def prepare_training_data(
         dataset["volumen_carga_m3"] * DENSIDAD_ESTIMADA_TON_M3
     ).round(2)
     fecha_entrega = pd.to_datetime(
-        dataset["fecha_entrega"], errors="coerce", utc=True
+        dataset["fecha_entrega"], errors="coerce", format="mixed", utc=True
     )
     fecha_asignacion = pd.to_datetime(
-        dataset["fecha_asignacion"], errors="coerce", utc=True
+        dataset["fecha_asignacion"], errors="coerce", format="mixed", utc=True
     )
     fecha_viaje = fecha_entrega.fillna(fecha_asignacion)
-    fecha_pedido = pd.to_datetime(dataset["created_at"], errors="coerce", utc=True)
+    fecha_pedido = pd.to_datetime(
+        dataset["created_at"], errors="coerce", format="mixed", utc=True
+    )
     fecha_pedido_respaldo = fecha_viaje.isna() & fecha_pedido.notna()
     dataset["fecha_orden"] = fecha_viaje.fillna(fecha_pedido)
     diagnostics["filas_con_fecha_viaje"] = int(fecha_viaje.notna().sum())
