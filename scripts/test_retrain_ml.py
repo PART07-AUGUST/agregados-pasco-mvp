@@ -6,15 +6,31 @@ import pandas as pd
 from retrain_ml import (
     ALGORITHM_NAMES,
     evaluate_models,
+    load_artifact,
     prepare_training_data,
     promotion_allowed,
     publish_comparison,
     score_predictions,
+    serialize_artifact,
+    sign_artifact,
     split_recent_holdout,
 )
 
 
 class RetrainMlTests(unittest.TestCase):
+    def test_signed_artifact_loads_and_rejects_tampering_or_context_changes(self) -> None:
+        key = b"test-signing-key-with-at-least-32-bytes"
+        encoded_artifact = serialize_artifact({"model": "trusted"})
+        signature = sign_artifact(encoded_artifact, "v1", "ridge", key)
+
+        loaded = load_artifact(encoded_artifact, signature, "v1", "ridge", key)
+
+        self.assertEqual(loaded, {"model": "trusted"})
+        with self.assertRaisesRegex(ValueError, "firma"):
+            load_artifact(encoded_artifact, "0" * 64, "v1", "ridge", key)
+        with self.assertRaisesRegex(ValueError, "firma"):
+            load_artifact(encoded_artifact, signature, "v2", "ridge", key)
+
     def test_training_load_uses_order_volume_and_assigned_vehicle_capacity(
         self,
     ) -> None:
@@ -105,6 +121,7 @@ class RetrainMlTests(unittest.TestCase):
                 {"mae_galones": 0.5, "rmse_galones": 0.6, "r2_score": 0.7},
                 None,
                 40,
+                b"test-signing-key-with-at-least-32-bytes",
             )
 
         supabase.rpc.assert_called_once()

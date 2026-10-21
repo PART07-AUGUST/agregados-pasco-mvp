@@ -1,4 +1,7 @@
 import base64
+import binascii
+import hashlib
+import hmac
 import os
 import sys
 from datetime import UTC, datetime
@@ -27,6 +30,8 @@ ALGORITHM_NAMES = (
 )
 DENSIDAD_ESTIMADA_TON_M3 = 1.45
 MINIMUM_TRAINING_ROWS = 30
+MAX_ARTIFACT_BYTES = 10 * 1024 * 1024
+MAX_BASE64_ARTIFACT_CHARS = ((MAX_ARTIFACT_BYTES + 2) // 3) * 4
 
 
 def create_models() -> dict[str, Any]:
@@ -128,8 +133,61 @@ def promotion_allowed(candidate: dict[str, float], active: dict[str, float]) -> 
     )
 
 
-def load_artifact(encoded_artifact: str) -> Any:
-    return joblib.load(BytesIO(base64.b64decode(encoded_artifact, validate=True)))
+def load_hmac_key() -> bytes:
+    secret = os.environ.get("ML_ARTIFACT_HMAC_KEY", "")
+    key = secret.encode("utf-8")
+    if len(key) < 32:
+        raise RuntimeError("ML_ARTIFACT_HMAC_KEY debe tener al menos 32 bytes.")
+    return key
+
+
+def decode_artifact(encoded_artifact: str) -> bytes:
+    if len(encoded_artifact) > MAX_BASE64_ARTIFACT_CHARS:
+        raise ValueError("El artefacto del modelo excede el tamaño permitido.")
+    try:
+        artifact = base64.b64decode(encoded_artifact, validate=True)
+    except (binascii.Error, ValueError) as error:
+        raise ValueError("El artefacto del modelo no tiene base64 válido.") from error
+    if not artifact or len(artifact) > MAX_ARTIFACT_BYTES:
+        raise ValueError("El artefacto del modelo excede el tamaño permitido.")
+    return artifact
+
+
+def sign_artifact(
+    encoded_artifact: str, version: str, algorithm: str, key: bytes
+) -> str:
+    artifact = decode_artifact(encoded_artifact)
+    signed_content = (
+        version.encode("utf-8")
+        + b"\0"
+        + algorithm.encode("utf-8")
+        + b"\0"
+        + artifact
+    )
+    return hmac.new(key, signed_content, hashlib.sha256).hexdigest()
+
+
+def load_artifact(
+    encoded_artifact: str,
+    signature: str | None,
+    version: str,
+    algorithm: str,
+    key: bytes,
+) -> Any:
+    artifact = decode_artifact(encoded_artifact)
+    if not isinstance(signature, str) or len(signature) != 64:
+        raise ValueError("El artefacto del modelo no tiene una firma válida.")
+    signed_content = (
+        version.encode("utf-8")
+        + b"\0"
+        + algorithm.encode("utf-8")
+        + b"\0"
+        + artifact
+    )
+    expected_signature = hmac.new(key, signed_content, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(signature, expected_signature):
+        raise ValueError("La firma del artefacto del modelo no es válida.")
+    return joblib.load(BytesIO(artifact))
 
 
 def serialize_artifact(model: Any) -> str:
@@ -206,10 +264,10 @@ def score_reference(
     )
 
 
-def get_active_estimator(supabase: Client) -> Any | None:
+def get_active_estimator(supabase: Client, artifact_hmac_key: bytes) -> Any | None:
     response = (
         supabase.table("ml_modelos_comparados")
-        .select("artifact_base64")
+        .select("version, algoritmo, artifact_base64, artifact_signature")
         .eq("activo", True)
         .eq("es_referencia", False)
         .limit(1)
@@ -217,7 +275,14 @@ def get_active_estimator(supabase: Client) -> Any | None:
     )
     if not response.data or not response.data[0].get("artifact_base64"):
         return None
-    return load_artifact(response.data[0]["artifact_base64"])
+    active_model = response.data[0]
+    return load_artifact(
+        active_model["artifact_base64"],
+        active_model.get("artifact_signature"),
+        active_model["version"],
+        active_model["algoritmo"],
+        artifact_hmac_key,
+    )
 
 
 def evaluate_models(
@@ -271,6 +336,7 @@ def publish_comparison(
     baseline_metrics: dict[str, float],
     active_algorithm: str | None,
     training_count: int,
+    artifact_hmac_key: bytes,
 ) -> None:
     comparison_rows = [
         {
@@ -280,6 +346,9 @@ def publish_comparison(
             "r2_score": round(model["r2_score"], 6),
             "total_viajes_entrenados": training_count,
             "artifact_base64": model["artifact_base64"],
+            "artifact_signature": sign_artifact(
+                model["artifact_base64"], version, model["algoritmo"], artifact_hmac_key
+            ),
             "es_referencia": False,
         }
         for model in models
@@ -292,6 +361,7 @@ def publish_comparison(
             "r2_score": round(baseline_metrics["r2_score"], 6),
             "total_viajes_entrenados": training_count,
             "artifact_base64": None,
+            "artifact_signature": None,
             "es_referencia": True,
         }
     )
@@ -308,6 +378,7 @@ def publish_comparison(
 
 
 def run_retraining() -> None:
+    artifact_hmac_key = load_hmac_key()
     supabase_url = os.environ.get("SUPABASE_URL")
     service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not service_role_key:
@@ -324,7 +395,7 @@ def run_retraining() -> None:
 
     coefficients = load_reference_coefficients(supabase)
     try:
-        active_estimator = get_active_estimator(supabase)
+        active_estimator = get_active_estimator(supabase, artifact_hmac_key)
     except (ValueError, TypeError, EOFError, AttributeError):
         print(
             "El modelo activo no se pudo cargar; se comparará contra los coeficientes de referencia."
@@ -356,6 +427,7 @@ def run_retraining() -> None:
         baseline_metrics,
         active_algorithm,
         len(dataset),
+        artifact_hmac_key,
     )
     if active_algorithm:
         print(f"Modelo activo actualizado a {active_algorithm} ({version}).")
