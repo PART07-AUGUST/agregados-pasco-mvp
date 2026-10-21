@@ -91,7 +91,11 @@ export function TripsList({ trips }: TripsListProps) {
                     {t.consumoDieselEstimado != null ? (
                       <div>
                         <span className="text-amber-400 font-bold block">{t.consumoDieselEstimado} gal</span>
-                        <span className="text-[9px] text-slate-500">S/ {(t.consumoDieselEstimado * 17.5).toFixed(1)}</span>
+                        <span className="text-[9px] text-slate-500">
+                          {t.costoDieselEstimadoSoles != null
+                            ? `S/ ${t.costoDieselEstimadoSoles.toFixed(2)}`
+                            : 'Costo no registrado'}
+                        </span>
                       </div>
                     ) : (
                       <span className="text-slate-600">--</span>

@@ -32,8 +32,21 @@ export const viajeMapper = {
       distanciaKm: dto.distancia_km != null ? Number(dto.distancia_km) : undefined,
       desnivelMetros: dto.desnivel_metros != null ? Number(dto.desnivel_metros) : undefined,
       canteraOrigen: dto.cantera_origen ?? undefined,
+      volumenCargaEstimadoM3:
+        dto.volumen_carga_estimado_m3 != null
+          ? Number(dto.volumen_carga_estimado_m3)
+          : undefined,
       consumoDieselEstimado:
         dto.consumo_diesel_estimado != null ? Number(dto.consumo_diesel_estimado) : undefined,
+      costoDieselEstimadoSoles:
+        dto.costo_diesel_estimado_pen != null
+          ? Number(dto.costo_diesel_estimado_pen)
+          : undefined,
+      precioGalonAplicadoSoles:
+        dto.precio_galon_aplicado_pen != null
+          ? Number(dto.precio_galon_aplicado_pen)
+          : undefined,
+      modeloMlVersion: dto.ml_modelo_version ?? undefined,
       consumoDieselReal:
         dto.consumo_diesel_real != null ? Number(dto.consumo_diesel_real) : undefined,
       clienteNombre: extra?.clienteNombre,

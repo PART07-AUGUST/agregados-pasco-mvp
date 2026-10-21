@@ -34,18 +34,16 @@ function ModelBadges({
 
   return (
     <>
-      <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">
-        R² {prediction ? `${(prediction.r2Score * 100).toFixed(1)}%` : '--'}
-      </span>
+      {prediction?.r2Score != null && (
+        <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">
+          R² {(prediction.r2Score * 100).toFixed(1)}%
+        </span>
+      )}
       {prediction && (
-        <span
-          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-            prediction.source === 'backend'
-              ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
-              : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
-          }`}
-        >
-          {prediction.source === 'backend' ? 'Backend ML' : 'Fallback local'}
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-300 border-emerald-500/30">
+          {prediction.algoritmo === 'baseline_coefficients'
+            ? 'Modelo de referencia'
+            : prediction.algoritmo.replaceAll('_', ' ')}
         </span>
       )}
     </>
@@ -124,11 +122,6 @@ export function FuelPredictionCard({
         </p>
       )}
       {routeMessage && <StatusMessage className="text-amber-300">{routeMessage}</StatusMessage>}
-      {prediction?.source === 'fallback' && (
-        <StatusMessage className="text-amber-300">
-          Predicción local de contingencia; el backend no respondió.
-        </StatusMessage>
-      )}
       {predictionError && (
         <StatusMessage className="text-rose-300">{predictionError}</StatusMessage>
       )}

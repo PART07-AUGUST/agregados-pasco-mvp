@@ -15,26 +15,27 @@ interface TripAssignModalProps {
 
 export function TripAssignModal({ order, onSuccess, onCancel }: TripAssignModalProps) {
   const {
-    route,
-    routeLoading,
-    routeMessage,
-    prediction,
-    predictionLoading,
-    predictionError,
-  } = useTripFuelPrediction(order);
-
-  const {
     vehiculos,
     conductores,
     selectedVehiculoId,
     setSelectedVehiculoId,
     selectedConductorId,
     setSelectedConductorId,
+    selectedVehiculo,
     loading,
     fetching,
     error,
     handleAssign,
-  } = useTripDispatch(order, onSuccess, route ?? undefined);
+  } = useTripDispatch(order, onSuccess);
+
+  const {
+    route,
+    routeLoading,
+    routeMessage,
+    prediction,
+    predictionLoading,
+    predictionError,
+  } = useTripFuelPrediction(order, selectedVehiculo?.capacidadM3);
 
   return (
     <ModalContainer
@@ -150,7 +151,7 @@ export function TripAssignModal({ order, onSuccess, onCancel }: TripAssignModalP
               </button>
               <button
                 type="button"
-                onClick={() => void handleAssign()}
+                onClick={() => void handleAssign(route ?? undefined)}
                 disabled={loading || routeLoading || predictionLoading || !route || !prediction}
                 className="flex-1 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-600 active:scale-95 transition-colors shadow-md shadow-amber-500/10 cursor-pointer flex items-center justify-center gap-1"
               >

@@ -10,8 +10,7 @@ import { getErrorMessage } from '../../../shared/utils/errors';
 
 export function useTripDispatch(
   order: Pedido,
-  onSuccess: () => void,
-  route?: TripRouteInput
+  onSuccess: () => void
 ) {
   const [vehiculos, setVehiculos] = useState<VehiculoDespachoOption[]>([]);
   const [conductores, setConductores] = useState<ConductorDespachoOption[]>([]);
@@ -54,7 +53,7 @@ export function useTripDispatch(
     };
   }, []);
 
-  const handleAssign = async () => {
+  const handleAssign = async (route?: TripRouteInput) => {
     setError(null);
 
     if (!selectedVehiculoId || !selectedConductorId) {

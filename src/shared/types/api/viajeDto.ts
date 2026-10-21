@@ -12,7 +12,11 @@ export interface ViajeResponseDto {
   distancia_km?: number | string | null;
   desnivel_metros?: number | string | null;
   cantera_origen?: string | null;
+  volumen_carga_estimado_m3?: number | string | null;
   consumo_diesel_estimado?: number | string | null;
+  costo_diesel_estimado_pen?: number | string | null;
+  precio_galon_aplicado_pen?: number | string | null;
+  ml_modelo_version?: string | null;
   consumo_diesel_real?: number | string | null;
 }
 

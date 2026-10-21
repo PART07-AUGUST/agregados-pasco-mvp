@@ -8,7 +8,7 @@ import { driversService } from '../shared/services/driversService';
 import type { ConductorDetallado } from '../shared/types';
 import { getErrorMessage } from '../shared/utils/errors';
 
-export type DashboardTab = 'monitoreo' | 'flota' | 'conductores' | 'pedidos';
+export type DashboardTab = 'monitoreo' | 'flota' | 'conductores' | 'pedidos' | 'machine-learning';
 
 export function useAdminDashboardData() {
   const navigate = useNavigate();

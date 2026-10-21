@@ -22,6 +22,9 @@ dist-ssr/
 # Supabase local config & migrations
 supabase/.temp/
 supabase/migrations/
+!supabase/migrations/
+supabase/migrations/*
+!supabase/migrations/20261020_ml_model_comparison_and_trip_cost.sql
 
 # Credentials & Certificates
 *.pem

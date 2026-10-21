@@ -19,6 +19,7 @@ export function useFuelPrediction(input: FuelPredictionInput | null): FuelPredic
   const distanciaKm = input?.distanciaKm ?? null;
   const desnivelMetros = input?.desnivelMetros ?? null;
   const pesoCargaTon = input?.pesoCargaTon ?? null;
+  const cantidadViajes = input?.cantidadViajes ?? 1;
 
   useEffect(() => {
     if (distanciaKm == null || desnivelMetros == null || pesoCargaTon == null) {
@@ -33,14 +34,11 @@ export function useFuelPrediction(input: FuelPredictionInput | null): FuelPredic
         setPrediction(null);
         setPredictionLoading(true);
         setPredictionError(null);
-        return fuelPredictionService.loadActiveParams();
-      })
-      .then(() => {
-        if (cancelled) return null;
         return fuelPredictionService.predictOnline({
           distanciaKm,
           desnivelMetros,
           pesoCargaTon,
+          cantidadViajes,
         });
       })
       .then((result) => {
@@ -49,7 +47,7 @@ export function useFuelPrediction(input: FuelPredictionInput | null): FuelPredic
       .catch((predictionLoadError: unknown) => {
         console.error('No se pudo obtener la predicción de combustible:', predictionLoadError);
         if (cancelled) return;
-        setPredictionError('No se pudo calcular la predicción de combustible.');
+        setPredictionError('No se pudo consultar el modelo de combustible. Intenta nuevamente.');
         setPrediction(null);
       })
       .finally(() => {
@@ -59,7 +57,7 @@ export function useFuelPrediction(input: FuelPredictionInput | null): FuelPredic
     return () => {
       cancelled = true;
     };
-  }, [distanciaKm, desnivelMetros, pesoCargaTon]);
+  }, [cantidadViajes, distanciaKm, desnivelMetros, pesoCargaTon]);
 
   return {
     prediction: distanciaKm == null || desnivelMetros == null || pesoCargaTon == null ? null : prediction,
