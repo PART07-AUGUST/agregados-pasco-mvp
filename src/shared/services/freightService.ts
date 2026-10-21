@@ -28,6 +28,7 @@ export interface MaterialQuoteItem {
 }
 
 export interface RouteCalculationResult {
+  routeSource: 'graphhopper' | 'aproximada';
   quarry: QuarryLocation;
   destinationName: string;
   distanceKm: number;
@@ -585,6 +586,7 @@ export const freightService = {
 
     return {
       quarry,
+      routeSource: routeResult.source,
       destinationName: destinationName.trim() || preset?.name || 'Obra en Cerro de Pasco',
       distanceKm: routeResult.distanceKm,
       durationMinutes: routeResult.durationMinutes,

@@ -207,7 +207,7 @@ export function AdminDashboard() {
           <div className="space-y-6">
             {activeTab === 'monitoreo' && (
               <div className="space-y-6">
-                <TripsList trips={trips} />
+                <TripsList trips={trips} onActualFuelSaved={refreshData} />
               </div>
             )}
 

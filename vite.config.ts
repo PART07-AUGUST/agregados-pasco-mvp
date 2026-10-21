@@ -8,5 +8,20 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    watch: {
+      usePolling: true,
+      interval: 1000,
+      ignored: [
+        '**/.agents/**',
+        '**/.codex/**',
+        '**/.git/**',
+        '**/.venv/**',
+        '**/coverage/**',
+        '**/dist/**',
+        '**/node_modules/**',
+      ],
+    },
+  },
 })
 

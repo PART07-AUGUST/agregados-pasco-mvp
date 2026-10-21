@@ -11,7 +11,10 @@ export interface FuelPredictionState {
   predictionError: string | null;
 }
 
-export function useFuelPrediction(input: FuelPredictionInput | null): FuelPredictionState {
+export function useFuelPrediction(
+  input: FuelPredictionInput | null,
+  compareModels = false
+): FuelPredictionState {
   const [prediction, setPrediction] = useState<FuelPredictionResult | null>(null);
   const [predictionLoading, setPredictionLoading] = useState(false);
   const [predictionError, setPredictionError] = useState<string | null>(null);
@@ -39,7 +42,7 @@ export function useFuelPrediction(input: FuelPredictionInput | null): FuelPredic
           desnivelMetros,
           pesoCargaTon,
           cantidadViajes,
-        });
+        }, compareModels);
       })
       .then((result) => {
         if (result && !cancelled) setPrediction(result);
@@ -57,7 +60,7 @@ export function useFuelPrediction(input: FuelPredictionInput | null): FuelPredic
     return () => {
       cancelled = true;
     };
-  }, [cantidadViajes, distanciaKm, desnivelMetros, pesoCargaTon]);
+  }, [cantidadViajes, compareModels, distanciaKm, desnivelMetros, pesoCargaTon]);
 
   return {
     prediction: distanciaKm == null || desnivelMetros == null || pesoCargaTon == null ? null : prediction,

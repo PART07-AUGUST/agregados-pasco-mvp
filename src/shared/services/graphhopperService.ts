@@ -5,6 +5,7 @@ export interface RouteCoordinate {
 }
 
 export interface GraphHopperRouteResult {
+  source: 'graphhopper' | 'aproximada';
   distanceKm: number;
   durationMinutes: number;
   ascendMeters: number;
@@ -129,6 +130,7 @@ export const graphhopperService = {
     const instructions = (path.instructions || []).map((inst) => inst.text);
 
     const result: GraphHopperRouteResult = {
+      source: 'graphhopper',
       distanceKm,
       durationMinutes,
       ascendMeters: Math.round(path.ascend || 0),
@@ -167,6 +169,7 @@ export const graphhopperService = {
     const durationMinutes = Math.round((distanceKm / 35) * 60) + 15;
 
     return {
+      source: 'aproximada',
       distanceKm: Math.max(1, distanceKm),
       durationMinutes: Math.max(10, durationMinutes),
       ascendMeters: 120,

@@ -12,6 +12,7 @@ export interface ViajeResponseDto {
   distancia_km?: number | string | null;
   desnivel_metros?: number | string | null;
   cantera_origen?: string | null;
+  fuente_ruta?: 'graphhopper' | 'aproximada' | 'legacy';
   volumen_carga_estimado_m3?: number | string | null;
   consumo_diesel_estimado?: number | string | null;
   costo_diesel_estimado_pen?: number | string | null;
@@ -27,6 +28,7 @@ export interface ViajeCreateDto {
   distancia_km?: number | null;
   desnivel_metros?: number | null;
   cantera_origen?: string | null;
+  fuente_ruta?: 'graphhopper' | 'aproximada' | 'legacy';
 }
 
 export interface ViajeUpdateDto {

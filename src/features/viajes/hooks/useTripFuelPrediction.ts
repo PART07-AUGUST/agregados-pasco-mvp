@@ -14,6 +14,7 @@ import { useFuelPrediction } from '../../../shared/hooks/useFuelPrediction';
 const FALLBACK_ROUTE: TripRouteInput = {
   distanciaKm: 24.5,
   desnivelMetros: 140,
+  fuenteRuta: 'aproximada',
   canteraOrigen: DEFAULT_QUARRY.name,
 };
 
@@ -34,6 +35,7 @@ function getStoredRoute(order: Pick<Pedido, 'distanciaKm' | 'desnivelMetros' | '
   return {
     distanciaKm: order.distanciaKm,
     desnivelMetros: order.desnivelMetros ?? 0,
+    fuenteRuta: 'legacy',
     canteraOrigen: order.canteraOrigen || DEFAULT_QUARRY.name,
   };
 }
@@ -62,7 +64,10 @@ export function useTripFuelPrediction(
         desnivelMetros: route.desnivelMetros,
       }
     : null;
-  const { prediction, predictionLoading, predictionError } = useFuelPrediction(predictionInput);
+  const { prediction, predictionLoading, predictionError } = useFuelPrediction(
+    predictionInput,
+    true
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +80,9 @@ export function useTripFuelPrediction(
         setRouteMessage(null);
         if (storedRoute) {
           setRoute(storedRoute);
+          if (storedRoute.fuenteRuta === 'legacy') {
+            setRouteMessage('Ruta histórica sin origen verificable; se conservará etiquetada como legacy.');
+          }
           return null;
         }
         return freightService.calculateFreightQuote({
@@ -88,8 +96,12 @@ export function useTripFuelPrediction(
         setRoute({
           distanciaKm: quote.distanceKm,
           desnivelMetros: quote.ascendMeters ?? 0,
+          fuenteRuta: quote.routeSource,
           canteraOrigen: quote.quarry.name,
         });
+        if (quote.routeSource === 'aproximada') {
+          setRouteMessage('Ruta aproximada: no se usará como medición observada para reentrenar.');
+        }
       })
       .catch((routeError: unknown) => {
         console.warn('No se pudo recalcular la ruta del pedido; usando fallback:', routeError);

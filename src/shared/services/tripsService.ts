@@ -37,6 +37,7 @@ export interface DispatchResources {
 export interface TripRouteInput {
   distanciaKm: number;
   desnivelMetros: number;
+  fuenteRuta: 'graphhopper' | 'aproximada' | 'legacy';
   canteraOrigen?: string;
 }
 
@@ -169,6 +170,12 @@ export const tripsService = {
     );
     const res = await apiClient.post<ViajeResponseDto>('/viajes', payload);
     return res.id;
+  },
+
+  async recordActualFuel(viajeId: string, consumoDieselReal: number): Promise<void> {
+    await apiClient.patch<ViajeResponseDto>(`/viajes/${viajeId}/consumo-real`, {
+      consumo_diesel_real: consumoDieselReal,
+    });
   },
 
   async getAvailableDispatchResources(): Promise<DispatchResources> {
