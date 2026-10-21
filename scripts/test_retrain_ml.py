@@ -47,7 +47,13 @@ class RetrainMlTests(unittest.TestCase):
                     "fecha_asignacion": "2026-01-01T00:00:00Z",
                 }
             ],
-            [{"id": "order-1", "volumen_m3": 20}],
+            [
+                {
+                    "id": "order-1",
+                    "volumen_m3": 20,
+                    "created_at": "2025-12-01T00:00:00Z",
+                }
+            ],
             [{"id": "truck-1", "capacidad_m3": 15}],
         )
 
@@ -72,7 +78,7 @@ class RetrainMlTests(unittest.TestCase):
                     "desnivel_metros": 4501 if index == 5 else 80,
                     "consumo_diesel_real": 0 if index == 7 else 8,
                     "fecha_entrega": "invalid-date" if index == 4 else "2026-01-02T00:00:00Z",
-                    "fecha_asignacion": "2026-01-01T00:00:00Z",
+                    "fecha_asignacion": None if index == 4 else "2026-01-01T00:00:00Z",
                 }
             )
             if index != 1:
@@ -80,6 +86,7 @@ class RetrainMlTests(unittest.TestCase):
                     {
                         "id": pedido_id,
                         "volumen_m3": 50 if index == 6 else 10,
+                        "created_at": "2025-12-01T00:00:00Z",
                     }
                 )
             if index != 2:
@@ -92,16 +99,18 @@ class RetrainMlTests(unittest.TestCase):
 
         dataset, diagnostics = prepare_training_data(trips, orders, vehicles)
 
-        self.assertEqual(len(dataset), 1)
+        self.assertEqual(len(dataset), 2)
         self.assertEqual(diagnostics["filas_viajes_api"], 8)
         self.assertEqual(diagnostics["filas_despues_join_pedidos"], 7)
         self.assertEqual(diagnostics["filas_despues_join_vehiculos"], 6)
-        self.assertEqual(diagnostics["filas_sin_fecha_valida"], 1)
-        self.assertEqual(diagnostics["filas_despues_campos_requeridos"], 5)
-        self.assertEqual(diagnostics["filas_despues_filtro_distancia"], 4)
-        self.assertEqual(diagnostics["filas_despues_filtro_desnivel"], 3)
-        self.assertEqual(diagnostics["filas_despues_filtro_carga"], 2)
-        self.assertEqual(diagnostics["filas_despues_filtro_consumo"], 1)
+        self.assertEqual(diagnostics["filas_con_fecha_viaje"], 5)
+        self.assertEqual(diagnostics["filas_con_fecha_pedido_respaldo"], 1)
+        self.assertEqual(diagnostics["filas_sin_fecha_valida"], 0)
+        self.assertEqual(diagnostics["filas_despues_campos_requeridos"], 6)
+        self.assertEqual(diagnostics["filas_despues_filtro_distancia"], 5)
+        self.assertEqual(diagnostics["filas_despues_filtro_desnivel"], 4)
+        self.assertEqual(diagnostics["filas_despues_filtro_carga"], 3)
+        self.assertEqual(diagnostics["filas_despues_filtro_consumo"], 2)
 
     def test_metrics_match_served_minimum_fuel(self) -> None:
         metrics = score_predictions(pd.Series([0.5, 1.23]), np.array([-1.0, 1.23]))

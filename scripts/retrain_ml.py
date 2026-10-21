@@ -62,6 +62,7 @@ def prepare_training_data(
     diagnostics = {
         "filas_viajes_api": len(trips),
         "pedidos_sin_volumen_numerico": 0,
+        "pedidos_sin_fecha_creacion": 0,
         "vehiculos_sin_capacidad_numerica": 0,
     }
     trip_data = pd.DataFrame(trips)
@@ -70,6 +71,11 @@ def prepare_training_data(
     if not order_data.empty:
         diagnostics["pedidos_sin_volumen_numerico"] = int(
             pd.to_numeric(order_data["volumen_m3"], errors="coerce").isna().sum()
+        )
+        diagnostics["pedidos_sin_fecha_creacion"] = int(
+            pd.to_datetime(order_data["created_at"], errors="coerce", utc=True)
+            .isna()
+            .sum()
         )
     if not vehicle_data.empty:
         diagnostics["vehiculos_sin_capacidad_numerica"] = int(
@@ -84,6 +90,8 @@ def prepare_training_data(
                 "filas_sin_distancia_numerica": 0,
                 "filas_sin_carga_calculable": 0,
                 "filas_sin_consumo_numerico": 0,
+                "filas_con_fecha_viaje": 0,
+                "filas_con_fecha_pedido_respaldo": 0,
                 "filas_sin_fecha_valida": 0,
                 "filas_despues_campos_requeridos": 0,
                 "filas_despues_filtro_distancia": 0,
@@ -95,7 +103,7 @@ def prepare_training_data(
         return pd.DataFrame(), diagnostics
 
     dataset = trip_data.merge(
-        order_data[["id", "volumen_m3"]],
+        order_data[["id", "volumen_m3", "created_at"]],
         left_on="pedido_id",
         right_on="id",
         suffixes=("", "_pedido"),
@@ -123,10 +131,19 @@ def prepare_training_data(
     dataset["peso_carga_ton"] = (
         dataset["volumen_carga_m3"] * DENSIDAD_ESTIMADA_TON_M3
     ).round(2)
-    dataset["fecha_orden"] = pd.to_datetime(
-        dataset["fecha_entrega"].fillna(dataset["fecha_asignacion"]),
-        errors="coerce",
-        utc=True,
+    fecha_entrega = pd.to_datetime(
+        dataset["fecha_entrega"], errors="coerce", utc=True
+    )
+    fecha_asignacion = pd.to_datetime(
+        dataset["fecha_asignacion"], errors="coerce", utc=True
+    )
+    fecha_viaje = fecha_entrega.fillna(fecha_asignacion)
+    fecha_pedido = pd.to_datetime(dataset["created_at"], errors="coerce", utc=True)
+    fecha_pedido_respaldo = fecha_viaje.isna() & fecha_pedido.notna()
+    dataset["fecha_orden"] = fecha_viaje.fillna(fecha_pedido)
+    diagnostics["filas_con_fecha_viaje"] = int(fecha_viaje.notna().sum())
+    diagnostics["filas_con_fecha_pedido_respaldo"] = int(
+        fecha_pedido_respaldo.sum()
     )
     diagnostics["filas_sin_distancia_numerica"] = int(
         dataset["distancia_km"].isna().sum()
@@ -265,7 +282,7 @@ def fetch_training_data(supabase: Client) -> tuple[pd.DataFrame, dict[str, int]]
     if order_ids:
         orders = (
             supabase.table("pedidos")
-            .select("id, volumen_m3")
+            .select("id, volumen_m3, created_at")
             .in_("id", order_ids)
             .execute()
             .data
@@ -310,6 +327,7 @@ def print_training_diagnostics(
         ("pedidos_recibidos", "Pedidos devueltos por la API"),
         ("pedidos_ids_no_encontrados", "IDs de pedidos no encontrados"),
         ("pedidos_sin_volumen_numerico", "Pedidos sin volumen numérico"),
+        ("pedidos_sin_fecha_creacion", "Pedidos sin created_at válido"),
         ("vehiculos_ids_solicitados", "IDs de vehículos solicitados"),
         ("vehiculos_recibidos", "Vehículos devueltos por la API"),
         ("vehiculos_ids_no_encontrados", "IDs de vehículos no encontrados"),
@@ -319,6 +337,11 @@ def print_training_diagnostics(
         ("filas_sin_distancia_numerica", "Filas sin distancia numérica (pueden solaparse)"),
         ("filas_sin_carga_calculable", "Filas sin carga calculable (pueden solaparse)"),
         ("filas_sin_consumo_numerico", "Filas sin consumo numérico (pueden solaparse)"),
+        ("filas_con_fecha_viaje", "Filas ordenadas por fecha del viaje"),
+        (
+            "filas_con_fecha_pedido_respaldo",
+            "Filas ordenadas por created_at del pedido (respaldo)",
+        ),
         ("filas_sin_fecha_valida", "Filas sin fecha válida (pueden solaparse)"),
         ("filas_despues_campos_requeridos", "Filas con campos requeridos y fecha válidos"),
         ("filas_despues_filtro_distancia", "Filas después del filtro de distancia"),
