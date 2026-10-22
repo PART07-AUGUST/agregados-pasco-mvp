@@ -3,7 +3,7 @@ import { apiClient } from '../../../shared/services/apiClient';
 import type { MlComparacionDto } from '../../../shared/types/api/mlDto';
 import { getErrorMessage } from '../../../shared/utils/errors';
 
-const COMPARISON_REFRESH_INTERVAL_MS = 60_000;
+const COMPARISON_REFRESH_INTERVAL_MS = 5 * 60_000;
 
 export function useMlComparisonData() {
   const [comparison, setComparison] = useState<MlComparacionDto | null>(null);
