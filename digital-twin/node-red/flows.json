@@ -196,6 +196,41 @@
     "wires": []
   },
   {
+    "id": "get_status",
+    "type": "http in",
+    "z": "twin_demo",
+    "name": "GET /plc/status",
+    "url": "/status",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 460,
+    "wires": [["status_response"]]
+  },
+  {
+    "id": "status_response",
+    "type": "function",
+    "z": "twin_demo",
+    "name": "Responder estado",
+    "func": "const lastSeen = flow.get('lastSeen') || 0;\nmsg.headers = { 'Content-Type': 'application/json' };\nmsg.payload = { online: lastSeen > 0 && Date.now() - lastSeen <= 15000, lastSeen: lastSeen ? new Date(lastSeen).toISOString() : null, telemetry: flow.get('telemetry') || null, lastAck: flow.get('lastAck') || null };\nreturn msg;",
+    "outputs": 1,
+    "x": 400,
+    "y": 460,
+    "wires": [["status_http_response"]]
+  },
+  {
+    "id": "status_http_response",
+    "type": "http response",
+    "z": "twin_demo",
+    "name": "Estado JSON",
+    "statusCode": "",
+    "headers": {},
+    "x": 650,
+    "y": 460,
+    "wires": []
+  },
+  {
     "id": "heartbeat_timer",
     "type": "inject",
     "z": "twin_demo",

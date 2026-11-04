@@ -68,6 +68,8 @@ El puente lee las tres coils cada 5 segundos, publica la lectura, consulta el co
 
 Para comprobar el contrato HTTP sin abrir el editor, ejecuta `uv run --project digital-twin/bridge python digital-twin/check_api.py https://<servicio>.onrender.com`. Para activar las pruebas desde la API protegida del Editor, usa `uv run --project digital-twin/bridge python digital-twin/set_command.py https://<servicio>.onrender.com on` y luego `off`; el puente debe estar en marcha para obtener la confirmación del PLC.
 
+Para ver el estado remoto sin entrar al editor, ejecuta `uv run --project digital-twin/bridge python digital-twin/check_status.py https://<servicio>.onrender.com`. El endpoint protegido `GET /plc/status` muestra `online`, la última telemetría y la última confirmación. `online` pasa a `false` tras 15 segundos sin telemetría.
+
 La API del puente usa JSON:
 
 - `POST /plc/telemetry`: `{ "pulse": true, "command": false, "ack": false, "timestamp": "2026-11-04T12:00:00+00:00" }`
