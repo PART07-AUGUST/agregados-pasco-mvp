@@ -1,6 +1,6 @@
 import unittest
 
-from bridge import Bridge, BridgeError, RenderApi, Snapshot
+from bridge import Bridge, BridgeError, ModbusPlc, RenderApi, Snapshot
 
 
 class FakePlc:
@@ -34,6 +34,39 @@ class FakeApi:
 
 
 class BridgeTests(unittest.TestCase):
+    def test_modbus_reconnects_after_runtime_restart(self) -> None:
+        class Response:
+            bits = [True, False, False]
+
+            def isError(self) -> bool:
+                return False
+
+        class Client:
+            def __init__(self) -> None:
+                self.connects = 0
+                self.closes = 0
+
+            def connect(self) -> bool:
+                self.connects += 1
+                return True
+
+            def close(self) -> None:
+                self.closes += 1
+
+            def read_coils(self, *_args, **_kwargs) -> Response:
+                if self.closes == 0:
+                    raise ConnectionResetError("Runtime restarted")
+                return Response()
+
+        plc = object.__new__(ModbusPlc)
+        plc.client = Client()
+
+        with self.assertRaisesRegex(BridgeError, "Modbus read failed"):
+            plc.read()
+        self.assertEqual(plc.read(), Snapshot(True, False, False))
+        self.assertEqual(plc.client.connects, 2)
+        self.assertEqual(plc.client.closes, 1)
+
     def test_cloud_command_is_written_and_confirmed(self) -> None:
         plc = FakePlc()
         api = FakeApi()

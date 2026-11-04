@@ -99,21 +99,35 @@ class ModbusPlc:
             config.plc_host, port=config.plc_port, timeout=3, retries=1
         )
 
+    def _connect(self) -> None:
+        try:
+            if not self.client.connect():
+                raise BridgeError("Modbus connection failed")
+        except Exception as exc:
+            self.client.close()
+            raise BridgeError("Modbus connection failed") from exc
+
     def read(self) -> Snapshot:
+        self._connect()
         try:
             response = self.client.read_coils(0, count=3, device_id=1)
         except Exception as exc:
+            self.client.close()
             raise BridgeError("Modbus read failed") from exc
         if response is None or response.isError() or len(response.bits) < 3:
+            self.client.close()
             raise BridgeError("Modbus read returned an error or fewer than three coils")
         return Snapshot(*(bool(bit) for bit in response.bits[:3]))
 
     def write_command(self, desired: bool) -> None:
+        self._connect()
         try:
             response = self.client.write_coil(1, desired, device_id=1)
         except Exception as exc:
+            self.client.close()
             raise BridgeError("Modbus write failed") from exc
         if response is None or response.isError():
+            self.client.close()
             raise BridgeError("Modbus write returned an error")
 
     def close(self) -> None:
