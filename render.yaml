@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: agregados-node-red-demo
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerContext: ./digital-twin/node-red
+    dockerfilePath: ./digital-twin/node-red/Dockerfile
+    envVars:
+      - key: PORT
+        value: "1880"
+      - key: NODE_RED_CREDENTIAL_SECRET
+        sync: false
+      - key: NODE_RED_ADMIN_USER
+        sync: false
+      - key: NODE_RED_ADMIN_PASSWORD_HASH
+        sync: false
+      - key: NODE_RED_BRIDGE_USER
+        sync: false
+      - key: NODE_RED_BRIDGE_PASSWORD_HASH
+        sync: false

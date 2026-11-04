@@ -6,6 +6,11 @@ pnpm-debug.log*
 
 # Dependencies
 node_modules/
+.venv/
+__pycache__/
+.pytest_cache/
+digital-twin/.local/
+digital-twin/openplc/project/build/
 
 # Production Build Directories
 dist/
