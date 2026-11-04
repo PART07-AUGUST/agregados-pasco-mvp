@@ -42,13 +42,13 @@ Configura estos secretos en Render durante la creación del servicio:
 | `NODE_RED_BRIDGE_USER` | Usuario distinto para el puente, por ejemplo `plc-bridge` |
 | `NODE_RED_BRIDGE_PASSWORD_HASH` | Hash bcrypt de la contraseña del puente |
 
-Puedes generar contraseñas aleatorias y hashes con `digital-twin/generate_credentials.py` (requiere el paquete Python `bcrypt`). Crea `digital-twin/.local/credentials.json`, `render-env.json` y `node-red.env`, todos excluidos de Git. El editor estará en `https://<servicio>.onrender.com/editor`; los endpoints `/plc/*` tienen autenticación básica independiente. Render proporciona HTTPS a la URL pública.
+Puedes generar contraseñas aleatorias y hashes con `uv run --with bcrypt --project digital-twin/bridge python digital-twin/generate_credentials.py`. Crea `digital-twin/.local/credentials.json`, `render-env.json` y `node-red.env`, todos excluidos de Git. El editor estará en `https://<servicio>.onrender.com/editor`; los endpoints `/plc/*` tienen autenticación básica independiente. Render proporciona HTTPS a la URL pública.
 
 El plan Free pierde los cambios de archivos al reiniciar. Si cambias el flujo en el editor, exporta el JSON y actualiza `node-red/flows.json` en Git antes de desplegar de nuevo. El comando vuelve a `false` y el estado de conexión vuelve a desconectado después de cada reinicio. Render puede tardar en iniciar si el servicio se durmió.
 
 ## 3. Ejecutar el puente local
 
-Necesitas Python 3.12 y `uv`. Ejecuta `python digital-twin/configure_bridge.py https://<servicio>.onrender.com` para crear el archivo `digital-twin/bridge/.env` con la URL y las credenciales originales del puente. Deben coincidir con las variables de Render. El archivo `.env` está excluido de Git.
+Necesitas Python 3.12 y `uv`. Ejecuta `uv run --project digital-twin/bridge python digital-twin/configure_bridge.py https://<servicio>.onrender.com` para crear el archivo `digital-twin/bridge/.env` con la URL y las credenciales originales del puente. Deben coincidir con las variables de Render. El archivo `.env` está excluido de Git.
 
 Desde la raíz del proyecto:
 
@@ -66,7 +66,7 @@ El puente lee las tres coils cada 5 segundos, publica la lectura, consulta el co
 3. Detén el puente: tras 15 segundos, `Estado de conexión` debe ponerse rojo. Reinícialo y verifica que vuelve a verde.
 4. Reinicia el servicio de Render desde su panel y comprueba que el flujo reaparece, el comando es `false` y el puente se reconecta.
 
-Para comprobar el contrato HTTP sin abrir el editor, ejecuta `python digital-twin/check_api.py https://<servicio>.onrender.com`. Para activar las pruebas desde la API protegida del Editor, usa `python digital-twin/set_command.py https://<servicio>.onrender.com on` y luego `off`; el puente debe estar en marcha para obtener la confirmación del PLC.
+Para comprobar el contrato HTTP sin abrir el editor, ejecuta `uv run --project digital-twin/bridge python digital-twin/check_api.py https://<servicio>.onrender.com`. Para activar las pruebas desde la API protegida del Editor, usa `uv run --project digital-twin/bridge python digital-twin/set_command.py https://<servicio>.onrender.com on` y luego `off`; el puente debe estar en marcha para obtener la confirmación del PLC.
 
 La API del puente usa JSON:
 
