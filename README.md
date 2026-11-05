@@ -4,6 +4,8 @@
 
 Este sistema interconecta en tiempo real a **Administradores de Flota**, **Conductores de Volquetes** y **Empresas Constructoras**, garantizando trazabilidad de pesajes en balanza, cálculo geoespacial de fletes con perfiles de altitud, reconocimiento inteligente de rutas y continuidad operativa bajo condiciones extremas y baja cobertura celular mediante una arquitectura **Offline-First** y **Clean Architecture**.
 
+La primera etapa experimental del gemelo digital, con OpenPLC local, puente Python y Node-RED en Render, se documenta en [digital-twin/README.md](digital-twin/README.md). Usa únicamente variables simuladas y no modifica la aplicación web.
+
 ---
 
 ## 📌 Contexto de Negocio y Operación Altoandina

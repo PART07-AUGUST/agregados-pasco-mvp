@@ -1,0 +1,426 @@
+[
+  {
+    "id": "twin_demo",
+    "type": "tab",
+    "label": "OpenPLC local ↔ Render",
+    "disabled": false,
+    "info": "Demo de conectividad. No controla salidas físicas."
+  },
+  {
+    "id": "command_on",
+    "type": "inject",
+    "z": "twin_demo",
+    "name": "Comando ON",
+    "props": [{ "p": "payload" }],
+    "repeat": "",
+    "once": false,
+    "payload": "true",
+    "payloadType": "bool",
+    "x": 140,
+    "y": 60,
+    "wires": [["set_command"]]
+  },
+  {
+    "id": "command_off",
+    "type": "inject",
+    "z": "twin_demo",
+    "name": "Comando OFF",
+    "props": [{ "p": "payload" }],
+    "repeat": "",
+    "once": false,
+    "payload": "false",
+    "payloadType": "bool",
+    "x": 140,
+    "y": 100,
+    "wires": [["set_command"]]
+  },
+  {
+    "id": "set_command",
+    "type": "function",
+    "z": "twin_demo",
+    "name": "Guardar comando de prueba",
+    "func": "const desired = msg.payload === true;\nconst version = (flow.get('version') || 0) + 1;\nflow.set('desired', desired);\nflow.set('version', version);\nmsg.payload = { desired, version };\nreturn msg;",
+    "outputs": 1,
+    "x": 380,
+    "y": 80,
+    "wires": [["command_debug"]]
+  },
+  {
+    "id": "command_debug",
+    "type": "debug",
+    "z": "twin_demo",
+    "name": "Comando solicitado",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 640,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "get_command",
+    "type": "http in",
+    "z": "twin_demo",
+    "name": "GET /plc/command",
+    "url": "/command",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 160,
+    "y": 180,
+    "wires": [["command_response"]]
+  },
+  {
+    "id": "command_response",
+    "type": "function",
+    "z": "twin_demo",
+    "name": "Responder comando",
+    "func": "msg.headers = { 'Content-Type': 'application/json' };\nmsg.payload = { desired: flow.get('desired') === true, version: flow.get('version') || 0 };\nreturn msg;",
+    "outputs": 1,
+    "x": 400,
+    "y": 180,
+    "wires": [["get_command_http_response"]]
+  },
+  {
+    "id": "get_command_http_response",
+    "type": "http response",
+    "z": "twin_demo",
+    "name": "Comando JSON",
+    "statusCode": "",
+    "headers": {},
+    "x": 650,
+    "y": 180,
+    "wires": []
+  },
+  {
+    "id": "post_telemetry",
+    "type": "http in",
+    "z": "twin_demo",
+    "name": "POST /plc/telemetry",
+    "url": "/telemetry",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 170,
+    "y": 280,
+    "wires": [["save_telemetry"]]
+  },
+  {
+    "id": "save_telemetry",
+    "type": "function",
+    "z": "twin_demo",
+    "name": "Validar y guardar telemetría",
+    "func": "const value = msg.payload;\nmsg.headers = { 'Content-Type': 'application/json' };\nif (!value || typeof value.pulse !== 'boolean' || typeof value.command !== 'boolean' || typeof value.ack !== 'boolean' || typeof value.timestamp !== 'string' || !Number.isFinite(Date.parse(value.timestamp))) {\n    msg.statusCode = 400;\n    msg.payload = { error: 'invalid_telemetry' };\n    return [msg, null];\n}\nflow.set('lastSeen', Date.now());\nflow.set('telemetry', value);\nconst debug = { payload: value };\nmsg.payload = { ok: true };\nreturn [msg, debug];",
+    "outputs": 2,
+    "x": 430,
+    "y": 280,
+    "wires": [["telemetry_http_response"], ["telemetry_debug"]]
+  },
+  {
+    "id": "telemetry_http_response",
+    "type": "http response",
+    "z": "twin_demo",
+    "name": "Telemetría recibida",
+    "statusCode": "",
+    "headers": {},
+    "x": 720,
+    "y": 260,
+    "wires": []
+  },
+  {
+    "id": "telemetry_debug",
+    "type": "debug",
+    "z": "twin_demo",
+    "name": "Lecturas de OpenPLC",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 720,
+    "y": 310,
+    "wires": []
+  },
+  {
+    "id": "post_ack",
+    "type": "http in",
+    "z": "twin_demo",
+    "name": "POST /plc/ack",
+    "url": "/ack",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 140,
+    "y": 390,
+    "wires": [["save_ack"]]
+  },
+  {
+    "id": "save_ack",
+    "type": "function",
+    "z": "twin_demo",
+    "name": "Validar confirmación",
+    "func": "const value = msg.payload;\nmsg.headers = { 'Content-Type': 'application/json' };\nif (!value || !Number.isInteger(value.version) || value.version < 0 || typeof value.desired !== 'boolean' || typeof value.observed !== 'boolean') {\n    msg.statusCode = 400;\n    msg.payload = { error: 'invalid_ack' };\n    return [msg, null];\n}\nflow.set('lastAck', value);\nconst debug = { payload: value };\nmsg.payload = { ok: true };\nreturn [msg, debug];",
+    "outputs": 2,
+    "x": 390,
+    "y": 390,
+    "wires": [["ack_http_response"], ["ack_debug"]]
+  },
+  {
+    "id": "ack_http_response",
+    "type": "http response",
+    "z": "twin_demo",
+    "name": "Confirmación recibida",
+    "statusCode": "",
+    "headers": {},
+    "x": 670,
+    "y": 370,
+    "wires": []
+  },
+  {
+    "id": "ack_debug",
+    "type": "debug",
+    "z": "twin_demo",
+    "name": "Comando confirmado",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 680,
+    "y": 420,
+    "wires": []
+  },
+  {
+    "id": "get_status",
+    "type": "http in",
+    "z": "twin_demo",
+    "name": "GET /plc/status",
+    "url": "/status",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 460,
+    "wires": [["status_response"]]
+  },
+  {
+    "id": "status_response",
+    "type": "function",
+    "z": "twin_demo",
+    "name": "Responder estado",
+    "func": "const lastSeen = flow.get('lastSeen') || 0;\nmsg.headers = { 'Content-Type': 'application/json' };\nmsg.payload = { online: lastSeen > 0 && Date.now() - lastSeen <= 15000, lastSeen: lastSeen ? new Date(lastSeen).toISOString() : null, telemetry: flow.get('telemetry') || null, lastAck: flow.get('lastAck') || null };\nreturn msg;",
+    "outputs": 1,
+    "x": 400,
+    "y": 460,
+    "wires": [["status_http_response"]]
+  },
+  {
+    "id": "status_http_response",
+    "type": "http response",
+    "z": "twin_demo",
+    "name": "Estado JSON",
+    "statusCode": "",
+    "headers": {},
+    "x": 650,
+    "y": 460,
+    "wires": []
+  },
+  {
+    "id": "heartbeat_timer",
+    "type": "inject",
+    "z": "twin_demo",
+    "name": "Revisar conexión cada 5 s",
+    "props": [{ "p": "payload" }],
+    "repeat": "5",
+    "once": true,
+    "onceDelay": 1,
+    "payload": "",
+    "payloadType": "date",
+    "x": 170,
+    "y": 500,
+    "wires": [["online_status"]]
+  },
+  {
+    "id": "online_status",
+    "type": "function",
+    "z": "twin_demo",
+    "name": "Estado de conexión",
+    "func": "const lastSeen = flow.get('lastSeen') || 0;\nconst online = lastSeen > 0 && Date.now() - lastSeen <= 15000;\nnode.status({ fill: online ? 'green' : 'red', shape: 'dot', text: online ? 'OpenPLC conectado' : 'OpenPLC desconectado' });\nif (flow.get('online') === online) return null;\nflow.set('online', online);\nmsg.payload = { online, lastSeen: lastSeen ? new Date(lastSeen).toISOString() : null };\nreturn msg;",
+    "outputs": 1,
+    "x": 420,
+    "y": 500,
+    "wires": [["status_debug"]]
+  },
+  {
+    "id": "status_debug",
+    "type": "debug",
+    "z": "twin_demo",
+    "name": "Conexión PLC",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 670,
+    "y": 500,
+    "wires": []
+  },
+  {
+    "id": "hmi_page",
+    "type": "http in",
+    "z": "twin_demo",
+    "name": "GET /plc/hmi",
+    "url": "/hmi",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 800,
+    "wires": [
+      [
+        "hmi_file"
+      ]
+    ]
+  },
+  {
+    "id": "hmi_file",
+    "type": "file in",
+    "z": "twin_demo",
+    "name": "Leer panel móvil",
+    "filename": "/data/hmi/index.html",
+    "filenameType": "str",
+    "format": "utf8",
+    "chunk": false,
+    "sendError": false,
+    "encoding": "utf8",
+    "allProps": "",
+    "x": 340,
+    "y": 800,
+    "wires": [
+      [
+        "hmi_page_headers"
+      ]
+    ]
+  },
+  {
+    "id": "hmi_page_headers",
+    "type": "function",
+    "z": "twin_demo",
+    "name": "Responder HTML",
+    "func": "msg.headers = { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };\nreturn msg;",
+    "outputs": 1,
+    "x": 470,
+    "y": 800,
+    "wires": [
+      [
+        "hmi_page_response"
+      ]
+    ]
+  },
+  {
+    "id": "hmi_page_response",
+    "type": "http response",
+    "z": "twin_demo",
+    "name": "Panel móvil",
+    "statusCode": "",
+    "headers": {},
+    "x": 760,
+    "y": 800,
+    "wires": []
+  },
+  {
+    "id": "hmi_status",
+    "type": "http in",
+    "z": "twin_demo",
+    "name": "GET /plc/hmi/status",
+    "url": "/hmi/status",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 900,
+    "wires": [
+      [
+        "hmi_status_data"
+      ]
+    ]
+  },
+  {
+    "id": "hmi_status_data",
+    "type": "function",
+    "z": "twin_demo",
+    "name": "Estado para teléfono",
+    "func": "const lastSeen = flow.get('lastSeen') || 0;\nconst telemetry = flow.get('telemetry');\nmsg.headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };\nmsg.payload = { online: lastSeen > 0 && Date.now() - lastSeen <= 15000, lastSeen: lastSeen ? new Date(lastSeen).toISOString() : null, pulse: telemetry && typeof telemetry.pulse === 'boolean' ? telemetry.pulse : null, desired: flow.get('desired') === true, version: flow.get('version') || 0, lastAck: flow.get('lastAck') || null };\nreturn msg;",
+    "outputs": 1,
+    "x": 470,
+    "y": 900,
+    "wires": [
+      [
+        "hmi_status_response"
+      ]
+    ]
+  },
+  {
+    "id": "hmi_status_response",
+    "type": "http response",
+    "z": "twin_demo",
+    "name": "Estado móvil JSON",
+    "statusCode": "",
+    "headers": {},
+    "x": 760,
+    "y": 900,
+    "wires": []
+  },
+  {
+    "id": "hmi_control",
+    "type": "http in",
+    "z": "twin_demo",
+    "name": "POST /plc/hmi/control",
+    "url": "/hmi/control",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 1000,
+    "wires": [
+      [
+        "hmi_set_command"
+      ]
+    ]
+  },
+  {
+    "id": "hmi_set_command",
+    "type": "function",
+    "z": "twin_demo",
+    "name": "Comando desde teléfono",
+    "func": "msg.headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };\nif (!msg.payload || typeof msg.payload.desired !== 'boolean') {\n    msg.statusCode = 400;\n    msg.payload = { error: 'invalid_command' };\n    return [msg, null];\n}\nconst lastSeen = flow.get('lastSeen') || 0;\nif (!lastSeen || Date.now() - lastSeen > 15000) {\n    msg.statusCode = 409;\n    msg.payload = { error: 'plc_offline' };\n    return [msg, null];\n}\nconst desired = msg.payload.desired;\nconst version = (flow.get('version') || 0) + 1;\nflow.set('desired', desired);\nflow.set('version', version);\nmsg.payload = { desired, version };\nreturn [msg, { payload: msg.payload }];",
+    "outputs": 2,
+    "x": 470,
+    "y": 1000,
+    "wires": [
+      [
+        "hmi_control_response"
+      ],
+      [
+        "command_debug"
+      ]
+    ]
+  },
+  {
+    "id": "hmi_control_response",
+    "type": "http response",
+    "z": "twin_demo",
+    "name": "Comando móvil JSON",
+    "statusCode": "",
+    "headers": {},
+    "x": 760,
+    "y": 1000,
+    "wires": []
+  }
+]
