@@ -293,7 +293,7 @@
     "type": "file in",
     "z": "twin_demo",
     "name": "Leer panel móvil",
-    "filename": "/data/hmi.html",
+    "filename": "/data/hmi/index.html",
     "filenameType": "str",
     "format": "utf8",
     "chunk": false,

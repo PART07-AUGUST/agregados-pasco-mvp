@@ -44,7 +44,7 @@ Configura estos secretos en Render durante la creación del servicio:
 | `NODE_RED_HMI_USER` | Usuario del panel móvil, distinto del editor y del puente |
 | `NODE_RED_HMI_PASSWORD_SCRYPT` | Hash scrypt de la contraseña del panel móvil |
 
-Puedes generar contraseñas aleatorias y hashes con `uv run --with bcrypt --project digital-twin/bridge python digital-twin/generate_credentials.py`. Crea `digital-twin/.local/credentials.json`, `render-env.json` y `node-red.env`, todos excluidos de Git. El editor estará en `https://<servicio>.onrender.com/editor`; el panel móvil estará en `https://<servicio>.onrender.com/plc/hmi`. El panel usa `node_red_hmi_user` y `node_red_hmi_password` de `credentials.json`; el puente conserva su propia cuenta. Render proporciona HTTPS a la URL pública.
+Puedes generar contraseñas aleatorias y hashes con `uv run --with bcrypt --project digital-twin/bridge python digital-twin/generate_credentials.py`. Crea `digital-twin/.local/credentials.json`, `render-env.json` y `node-red.env`, todos excluidos de Git. El editor estará en `https://<servicio>.onrender.com/editor`; la URL principal `https://<servicio>.onrender.com/` abrirá el panel móvil. El panel usa `node_red_hmi_user` y `node_red_hmi_password` de `credentials.json`; el puente conserva su propia cuenta. Render proporciona HTTPS a la URL pública.
 
 El plan Free pierde los cambios de archivos al reiniciar. Si cambias el flujo en el editor, exporta el JSON y actualiza `node-red/flows.json` en Git antes de desplegar de nuevo. El comando vuelve a `false` y el estado de conexión vuelve a desconectado después de cada reinicio. Render puede tardar en iniciar si el servicio se durmió.
 
@@ -76,7 +76,7 @@ Docker ejecuta **solo OpenPLC**. Después de iniciar Docker Desktop, `docker com
 
 ## 5. Panel para teléfono
 
-Abre `https://<servicio>.onrender.com/plc/hmi` en el navegador del teléfono, incluso usando datos móviles. Inicia sesión con `node_red_hmi_user` y `node_red_hmi_password` del archivo local `digital-twin/.local/credentials.json`. El panel actualiza el estado y la señal cada 2,5 segundos, permite enviar ON/OFF y muestra la confirmación de OpenPLC. Los botones quedan deshabilitados cuando el PLC está desconectado. Para esta etapa controlan únicamente variables simuladas.
+Abre `https://<servicio>.onrender.com/` en el navegador del teléfono, incluso usando datos móviles. Inicia sesión con `node_red_hmi_user` y `node_red_hmi_password` del archivo local `digital-twin/.local/credentials.json`. El panel actualiza el estado y la señal cada 2,5 segundos, permite enviar ON/OFF y muestra la confirmación de OpenPLC. Los botones quedan deshabilitados cuando el PLC está desconectado. Para esta etapa controlan únicamente variables simuladas.
 
 Para comprobar el contrato HTTP sin abrir el editor, ejecuta `uv run --project digital-twin/bridge python digital-twin/check_api.py https://<servicio>.onrender.com`. Para activar las pruebas desde la API protegida del Editor, usa `uv run --project digital-twin/bridge python digital-twin/set_command.py https://<servicio>.onrender.com on` y luego `off`; el puente debe estar en marcha para obtener la confirmación del PLC.
 

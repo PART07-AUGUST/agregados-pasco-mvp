@@ -24,11 +24,7 @@ function passwordMatches(password, stored) {
   return crypto.timingSafeEqual(actual, expected);
 }
 
-function protectHttpNodes(req, res, next) {
-  const path = (req.originalUrl || "").split("?", 1)[0];
-  const hmi = ["/plc/hmi", "/plc/hmi/", "/plc/hmi/status", "/plc/hmi/control"].includes(path);
-  const user = hmi ? hmiUser : bridgeUser;
-  const hash = hmi ? hmiHash : bridgeHash;
+function checkBasicAuth(req, res, next, user, hash, realm) {
   const header = req.headers.authorization || "";
   let authorized = false;
   if (header.startsWith("Basic ")) {
@@ -39,9 +35,21 @@ function protectHttpNodes(req, res, next) {
     }
   }
   if (authorized) return next();
-  res.setHeader("WWW-Authenticate", `Basic realm="${hmi ? "Node-RED HMI" : "PLC bridge"}"`);
+  res.setHeader("WWW-Authenticate", `Basic realm="${realm}"`);
   res.setHeader("Cache-Control", "no-store");
   return res.status(401).json({ error: "unauthorized" });
+}
+
+function protectHttpNodes(req, res, next) {
+  const path = (req.originalUrl || "").split("?", 1)[0];
+  const hmi = ["/plc/hmi", "/plc/hmi/", "/plc/hmi/status", "/plc/hmi/control"].includes(path);
+  return checkBasicAuth(req, res, next, hmi ? hmiUser : bridgeUser, hmi ? hmiHash : bridgeHash, hmi ? "Node-RED HMI" : "PLC bridge");
+}
+
+function protectHmiPage(req, res, next) {
+  const path = (req.originalUrl || "").split("?", 1)[0];
+  if (path !== "/" && path !== "/index.html") return next();
+  return checkBasicAuth(req, res, next, hmiUser, hmiHash, "Node-RED HMI");
 }
 
 module.exports = {
@@ -52,6 +60,7 @@ module.exports = {
   httpAdminRoot: "/editor",
   httpNodeRoot: "/plc",
   httpNodeMiddleware: protectHttpNodes,
+  httpStatic: [{ path: "/data/hmi", root: "/", middleware: protectHmiPage }],
   adminAuth: {
     type: "credentials",
     users: [{
