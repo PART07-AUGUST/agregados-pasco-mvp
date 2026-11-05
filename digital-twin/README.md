@@ -59,6 +59,12 @@ uv run --project digital-twin/bridge --env-file digital-twin/bridge/.env python 
 
 El puente lee las tres coils cada 5 segundos, publica la lectura, consulta el comando de Node-RED, escribe coil 1 y comprueba coil 2. Si Render o OpenPLC no responde, registra el fallo y reintenta el ciclo siguiente. Detenlo con `Ctrl+C`.
 
+### Arranque automático en Windows
+
+En este equipo está instalada la tarea de usuario `AgregadosOpenPLCBridge`. Al iniciar sesión en Windows ejecuta el puente con `digital-twin/bridge/.env`; espera y reintenta mientras Docker u OpenPLC estén detenidos. El registro rotativo está en `digital-twin/.local/bridge-service.log`. Para instalarla de nuevo en otro equipo, primero crea `.env` y el entorno Python del puente; después ejecuta `pwsh -NoProfile -ExecutionPolicy Bypass -File digital-twin/bridge/install_autostart.ps1`.
+
+Docker ejecuta **solo OpenPLC**. Después de iniciar Docker Desktop, `docker compose -f digital-twin/openplc/compose.yaml up -d` carga automáticamente el programa previamente subido al Runtime; no hace falta abrir el Editor para los arranques normales. La tarea de Windows mantiene el puente separado de Docker. Si detienes manualmente el contenedor, vuelve a ejecutar `up -d` para iniciarlo. Si quieres desactivar el autoarranque del puente, usa `Unregister-ScheduledTask -TaskName AgregadosOpenPLCBridge -Confirm:$false`.
+
 ## 4. Probar ambos sentidos
 
 1. Abre el editor de Node-RED en Render y mira **Debug**. `Lecturas de OpenPLC` debe mostrar `pulse` cambiando y `Estado de conexión` debe ponerse verde.
