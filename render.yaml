@@ -17,5 +17,9 @@ services:
         sync: false
       - key: NODE_RED_BRIDGE_USER
         sync: false
-      - key: NODE_RED_BRIDGE_PASSWORD_HASH
+      - key: NODE_RED_BRIDGE_PASSWORD_SCRYPT
+        sync: false
+      - key: NODE_RED_HMI_USER
+        sync: false
+      - key: NODE_RED_HMI_PASSWORD_SCRYPT
         sync: false

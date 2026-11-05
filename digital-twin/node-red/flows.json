@@ -270,5 +270,157 @@
     "x": 670,
     "y": 500,
     "wires": []
+  },
+  {
+    "id": "hmi_page",
+    "type": "http in",
+    "z": "twin_demo",
+    "name": "GET /plc/hmi",
+    "url": "/hmi",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 800,
+    "wires": [
+      [
+        "hmi_file"
+      ]
+    ]
+  },
+  {
+    "id": "hmi_file",
+    "type": "file in",
+    "z": "twin_demo",
+    "name": "Leer panel móvil",
+    "filename": "/data/hmi.html",
+    "filenameType": "str",
+    "format": "utf8",
+    "chunk": false,
+    "sendError": false,
+    "encoding": "utf8",
+    "allProps": "",
+    "x": 340,
+    "y": 800,
+    "wires": [
+      [
+        "hmi_page_headers"
+      ]
+    ]
+  },
+  {
+    "id": "hmi_page_headers",
+    "type": "function",
+    "z": "twin_demo",
+    "name": "Responder HTML",
+    "func": "msg.headers = { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };\nreturn msg;",
+    "outputs": 1,
+    "x": 470,
+    "y": 800,
+    "wires": [
+      [
+        "hmi_page_response"
+      ]
+    ]
+  },
+  {
+    "id": "hmi_page_response",
+    "type": "http response",
+    "z": "twin_demo",
+    "name": "Panel móvil",
+    "statusCode": "",
+    "headers": {},
+    "x": 760,
+    "y": 800,
+    "wires": []
+  },
+  {
+    "id": "hmi_status",
+    "type": "http in",
+    "z": "twin_demo",
+    "name": "GET /plc/hmi/status",
+    "url": "/hmi/status",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 900,
+    "wires": [
+      [
+        "hmi_status_data"
+      ]
+    ]
+  },
+  {
+    "id": "hmi_status_data",
+    "type": "function",
+    "z": "twin_demo",
+    "name": "Estado para teléfono",
+    "func": "const lastSeen = flow.get('lastSeen') || 0;\nconst telemetry = flow.get('telemetry');\nmsg.headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };\nmsg.payload = { online: lastSeen > 0 && Date.now() - lastSeen <= 15000, lastSeen: lastSeen ? new Date(lastSeen).toISOString() : null, pulse: telemetry && typeof telemetry.pulse === 'boolean' ? telemetry.pulse : null, desired: flow.get('desired') === true, version: flow.get('version') || 0, lastAck: flow.get('lastAck') || null };\nreturn msg;",
+    "outputs": 1,
+    "x": 470,
+    "y": 900,
+    "wires": [
+      [
+        "hmi_status_response"
+      ]
+    ]
+  },
+  {
+    "id": "hmi_status_response",
+    "type": "http response",
+    "z": "twin_demo",
+    "name": "Estado móvil JSON",
+    "statusCode": "",
+    "headers": {},
+    "x": 760,
+    "y": 900,
+    "wires": []
+  },
+  {
+    "id": "hmi_control",
+    "type": "http in",
+    "z": "twin_demo",
+    "name": "POST /plc/hmi/control",
+    "url": "/hmi/control",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 1000,
+    "wires": [
+      [
+        "hmi_set_command"
+      ]
+    ]
+  },
+  {
+    "id": "hmi_set_command",
+    "type": "function",
+    "z": "twin_demo",
+    "name": "Comando desde teléfono",
+    "func": "msg.headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };\nif (!msg.payload || typeof msg.payload.desired !== 'boolean') {\n    msg.statusCode = 400;\n    msg.payload = { error: 'invalid_command' };\n    return [msg, null];\n}\nconst lastSeen = flow.get('lastSeen') || 0;\nif (!lastSeen || Date.now() - lastSeen > 15000) {\n    msg.statusCode = 409;\n    msg.payload = { error: 'plc_offline' };\n    return [msg, null];\n}\nconst desired = msg.payload.desired;\nconst version = (flow.get('version') || 0) + 1;\nflow.set('desired', desired);\nflow.set('version', version);\nmsg.payload = { desired, version };\nreturn [msg, { payload: msg.payload }];",
+    "outputs": 2,
+    "x": 470,
+    "y": 1000,
+    "wires": [
+      [
+        "hmi_control_response"
+      ],
+      [
+        "command_debug"
+      ]
+    ]
+  },
+  {
+    "id": "hmi_control_response",
+    "type": "http response",
+    "z": "twin_demo",
+    "name": "Comando móvil JSON",
+    "statusCode": "",
+    "headers": {},
+    "x": 760,
+    "y": 1000,
+    "wires": []
   }
 ]

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1620">
+  <title>Control PLC · SIS-AGREGADOS</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; color: #e9f3f5; background: radial-gradient(circle at 90% 0%, #183747 0, transparent 38%), #0b1620; }
+    main { width: min(100%, 760px); margin: auto; padding: 26px 18px 48px; }
+    .brand { display: flex; align-items: center; gap: 10px; color: #86d3cf; font-size: 12px; font-weight: 800; letter-spacing: .15em; }
+    .brand-mark { width: 28px; height: 28px; border: 2px solid #65d4c5; border-radius: 8px; display: grid; place-items: center; font-size: 16px; letter-spacing: 0; }
+    h1 { font-size: clamp(32px, 8vw, 46px); line-height: 1.07; letter-spacing: -.05em; margin: 30px 0 10px; }
+    .intro { color: #a6b9c1; line-height: 1.5; margin: 0 0 30px; }
+    .card { background: #132630; border: 1px solid #2b4550; border-radius: 18px; padding: 22px; margin: 14px 0; box-shadow: 0 14px 28px #0002; }
+    .eyebrow { color: #9db4ba; font-size: 12px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; margin: 0 0 14px; }
+    .status-row { display: flex; gap: 12px; align-items: center; }
+    .dot { flex: 0 0 auto; width: 12px; height: 12px; border-radius: 50%; background: #82949c; box-shadow: 0 0 0 5px #82949c22; }
+    .dot.online { background: #59dda3; box-shadow: 0 0 0 5px #59dda322; }
+    .dot.offline { background: #ff7c78; box-shadow: 0 0 0 5px #ff7c7822; }
+    .status-text { font-size: 21px; font-weight: 760; }
+    .muted { color: #a6b9c1; font-size: 13px; line-height: 1.45; }
+    .status-note { margin: 10px 0 0 24px; }
+    .readings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .reading { background: #0c1d26; border-radius: 12px; padding: 16px; }
+    .reading strong { display: block; font-size: 28px; margin-top: 7px; letter-spacing: -.04em; }
+    .reading small { color: #9db4ba; font-size: 12px; }
+    .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    button { min-height: 66px; border: 0; border-radius: 14px; font: inherit; font-size: 20px; font-weight: 800; cursor: pointer; transition: transform .12s ease, opacity .12s ease; }
+    button:active { transform: scale(.98); }
+    button:focus-visible { outline: 3px solid #ffffff; outline-offset: 3px; }
+    button:disabled { cursor: not-allowed; opacity: .48; }
+    .on { color: #06221d; background: #69e4ae; }
+    .off { color: #f1f8f8; background: #344b58; }
+    .feedback { min-height: 24px; margin: 16px 0 0; font-size: 14px; color: #a9dacf; }
+    .feedback.error { color: #ffaaa6; }
+    .foot { margin-top: 28px; color: #819aa4; font-size: 12px; line-height: 1.5; }
+    @media (max-width: 400px) { main { padding-left: 14px; padding-right: 14px; } .card { padding: 18px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand"><span class="brand-mark">S</span>SIS-AGREGADOS · GEMELO DIGITAL</div>
+    <h1>Control del PLC</h1>
+    <p class="intro">Node-RED en Render conectado con OpenPLC en tu equipo.</p>
+
+    <section class="card" aria-labelledby="connection-heading">
+      <p class="eyebrow" id="connection-heading">Conexión en tiempo real</p>
+      <div class="status-row"><span class="dot" id="connection-dot"></span><span class="status-text" id="connection-text" role="status">Consultando…</span></div>
+      <p class="muted status-note" id="last-seen">Esperando la primera lectura.</p>
+    </section>
+
+    <section class="card" aria-labelledby="readings-heading">
+      <p class="eyebrow" id="readings-heading">Variables de prueba</p>
+      <div class="readings">
+        <div class="reading"><small>Señal del PLC</small><strong id="pulse">—</strong></div>
+        <div class="reading"><small>Comando confirmado</small><strong id="observed">—</strong></div>
+      </div>
+      <p class="muted" id="requested">Comando solicitado: —</p>
+    </section>
+
+    <section class="card" aria-labelledby="control-heading">
+      <p class="eyebrow" id="control-heading">Enviar comando</p>
+      <div class="buttons">
+        <button class="on" id="turn-on" type="button" disabled>ON</button>
+        <button class="off" id="turn-off" type="button" disabled>OFF</button>
+      </div>
+      <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
+    </section>
+
+    <p class="foot">Demostración con variables simuladas. Los botones no accionan equipos físicos. La pantalla se actualiza automáticamente cada 2,5 segundos.</p>
+  </main>
+  <script>
+    const endpoint = "/plc/hmi";
+    const $ = (id) => document.getElementById(id);
+    let online = false;
+    let sending = false;
+
+    function showFeedback(message, error = false) {
+      $("feedback").textContent = message;
+      $("feedback").classList.toggle("error", error);
+    }
+
+    function render(data) {
+      online = data.online === true;
+      $("connection-dot").className = "dot " + (online ? "online" : "offline");
+      $("connection-text").textContent = online ? "OpenPLC conectado" : "OpenPLC desconectado";
+      $("last-seen").textContent = data.lastSeen
+        ? "Última lectura: " + new Date(data.lastSeen).toLocaleString("es-PE")
+        : "Aún no hay lecturas del PLC.";
+      $("pulse").textContent = online && typeof data.pulse === "boolean" ? (data.pulse ? "ON" : "OFF") : "—";
+      const confirmed = data.lastAck && data.lastAck.version === data.version && data.lastAck.desired === data.desired && data.lastAck.observed === data.desired;
+      $("observed").textContent = online && confirmed ? (data.lastAck.observed ? "ON" : "OFF") : "—";
+      $("requested").textContent = "Comando solicitado: " + (data.desired ? "ON" : "OFF") + (online && !confirmed ? " · esperando confirmación" : "");
+      $("turn-on").disabled = !online || sending;
+      $("turn-off").disabled = !online || sending;
+      if (!online) showFeedback("Inicia OpenPLC y el puente local para habilitar los controles.", true);
+      else if (!sending && confirmed) showFeedback("Comando confirmado por OpenPLC.");
+    }
+
+    async function refresh() {
+      try {
+        const response = await fetch(endpoint + "/status", { credentials: "same-origin", cache: "no-store" });
+        if (!response.ok) throw new Error("No se pudo consultar el estado (HTTP " + response.status + ").");
+        render(await response.json());
+      } catch (error) {
+        online = false;
+        $("connection-dot").className = "dot offline";
+        $("connection-text").textContent = "Sin conexión con Render";
+        $("turn-on").disabled = true;
+        $("turn-off").disabled = true;
+        showFeedback(error.message, true);
+      }
+    }
+
+    async function sendCommand(desired) {
+      if (sending || !online) return;
+      sending = true;
+      $("turn-on").disabled = true;
+      $("turn-off").disabled = true;
+      showFeedback("Enviando comando…");
+      try {
+        const response = await fetch(endpoint + "/control", {
+          method: "POST", credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ desired })
+        });
+        if (!response.ok) throw new Error(response.status === 409 ? "OpenPLC está desconectado." : "No se pudo enviar el comando (HTTP " + response.status + ").");
+        showFeedback("Comando enviado; esperando confirmación de OpenPLC…");
+        await refresh();
+      } catch (error) {
+        showFeedback(error.message, true);
+      } finally {
+        sending = false;
+        $("turn-on").disabled = !online;
+        $("turn-off").disabled = !online;
+      }
+    }
+
+    $("turn-on").addEventListener("click", () => sendCommand(true));
+    $("turn-off").addEventListener("click", () => sendCommand(false));
+    refresh();
+    setInterval(refresh, 2500);
+  </script>
+</body>
+</html>

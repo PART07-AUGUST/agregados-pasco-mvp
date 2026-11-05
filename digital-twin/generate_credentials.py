@@ -7,10 +7,32 @@ The output directory is excluded from Git.
 from __future__ import annotations
 
 import json
+import hashlib
 import secrets
 from pathlib import Path
 
 import bcrypt
+
+
+WORDS = (
+    "arena arbol avion barco bosque brisa cable campo casa cielo cobre costa "
+    "cuadro dado delta disco dulce faro fecha feria flor foco fuego gato golfo "
+    "grano grupo hoja isla juego lago lana lapiz libro lima luna luz mapa mar "
+    "mesa meta monte motor muro nave nube ola oro oso papel parque paso pato "
+    "perro piedra pino playa puente radio rama rio roca rosa ruta sal salto "
+    "sello silla sol sonido sur tabla tarde techo tela tierra torre tren valle "
+    "vapor verde viento vista voz zona"
+).split()
+
+
+def memorable_password() -> str:
+    return "-".join(secrets.choice(WORDS) for _ in range(4)) + f"-{secrets.randbelow(10000):04d}"
+
+
+def scrypt_hash(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    digest = hashlib.scrypt(password.encode(), salt=salt, n=16384, r=8, p=1, dklen=32)
+    return f"{salt.hex()}:{digest.hex()}"
 
 
 def main() -> None:
@@ -27,6 +49,8 @@ def main() -> None:
         "node_red_admin_password": secrets.token_urlsafe(32),
         "node_red_bridge_user": "plc-bridge",
         "node_red_bridge_password": secrets.token_urlsafe(32),
+        "node_red_hmi_user": "operador",
+        "node_red_hmi_password": memorable_password(),
     }
     render_env = {
         "PORT": "1880",
@@ -36,9 +60,9 @@ def main() -> None:
             credentials["node_red_admin_password"].encode(), bcrypt.gensalt()
         ).decode(),
         "NODE_RED_BRIDGE_USER": credentials["node_red_bridge_user"],
-        "NODE_RED_BRIDGE_PASSWORD_HASH": bcrypt.hashpw(
-            credentials["node_red_bridge_password"].encode(), bcrypt.gensalt()
-        ).decode(),
+        "NODE_RED_BRIDGE_PASSWORD_SCRYPT": scrypt_hash(credentials["node_red_bridge_password"]),
+        "NODE_RED_HMI_USER": credentials["node_red_hmi_user"],
+        "NODE_RED_HMI_PASSWORD_SCRYPT": scrypt_hash(credentials["node_red_hmi_password"]),
     }
     secrets_path.write_text(json.dumps(credentials, indent=2) + "\n", encoding="utf-8")
     render_path.write_text(json.dumps(render_env, indent=2) + "\n", encoding="utf-8")
