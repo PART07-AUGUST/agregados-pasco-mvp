@@ -61,7 +61,7 @@ El puente lee las tres coils cada 5 segundos, publica la lectura, consulta el co
 
 ### Arranque automático en Windows
 
-En este equipo está instalada la tarea de usuario `AgregadosOpenPLCBridge`. Al iniciar sesión en Windows ejecuta el puente con `digital-twin/bridge/.env`; espera y reintenta mientras Docker u OpenPLC estén detenidos. El registro rotativo está en `digital-twin/.local/bridge-service.log`. Para instalarla de nuevo en otro equipo, primero crea `.env` y el entorno Python del puente; después ejecuta `pwsh -NoProfile -ExecutionPolicy Bypass -File digital-twin/bridge/install_autostart.ps1`.
+En este equipo está instalada la tarea de usuario `AgregadosOpenPLCBridge`. Al iniciar sesión en Windows ejecuta el puente sin abrir una consola, usando `digital-twin/bridge/.env`; espera y reintenta mientras Docker u OpenPLC estén detenidos. El registro rotativo está en `digital-twin/.local/bridge-service.log`. Para instalarla de nuevo en otro equipo, primero crea `.env` y el entorno Python del puente; después ejecuta `pwsh -NoProfile -ExecutionPolicy Bypass -File digital-twin/bridge/install_autostart.ps1`.
 
 Docker ejecuta **solo OpenPLC**. Después de iniciar Docker Desktop, `docker compose -f digital-twin/openplc/compose.yaml up -d` carga automáticamente el programa previamente subido al Runtime; no hace falta abrir el Editor para los arranques normales. La tarea de Windows mantiene el puente separado de Docker. Si detienes manualmente el contenedor, vuelve a ejecutar `up -d` para iniciarlo. Si quieres desactivar el autoarranque del puente, usa `Unregister-ScheduledTask -TaskName AgregadosOpenPLCBridge -Confirm:$false`.
 

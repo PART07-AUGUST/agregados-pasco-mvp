@@ -3,19 +3,19 @@ $ErrorActionPreference = 'Stop'
 $taskName = 'AgregadosOpenPLCBridge'
 $bridgeDir = $PSScriptRoot
 $repoRoot = Split-Path -Parent (Split-Path -Parent $bridgeDir)
-$pythonw = Join-Path $bridgeDir '.venv\Scripts\pythonw.exe'
-$runner = Join-Path $bridgeDir 'run_bridge.py'
+$python = Join-Path $bridgeDir '.venv\Scripts\python.exe'
+$runner = Join-Path $bridgeDir 'run_bridge_hidden.vbs'
 $envFile = Join-Path $bridgeDir '.env'
 
-if (-not (Test-Path -LiteralPath $pythonw)) {
-    throw "Python environment is missing: $pythonw"
+if (-not (Test-Path -LiteralPath $python)) {
+    throw "Python environment is missing: $python"
 }
 if (-not (Test-Path -LiteralPath $envFile)) {
     throw "Bridge credentials are missing: $envFile"
 }
 
 $user = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-$action = New-ScheduledTaskAction -Execute $pythonw -Argument ('"' + $runner + '"') -WorkingDirectory $repoRoot
+$action = New-ScheduledTaskAction -Execute (Join-Path $env:WINDIR 'System32\wscript.exe') -Argument ('//B "' + $runner + '"') -WorkingDirectory $repoRoot
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $user
 $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
 $settings = New-ScheduledTaskSettingsSet `
