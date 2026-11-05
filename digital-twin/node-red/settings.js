@@ -10,8 +10,6 @@ function required(name) {
 
 const bridgeUser = required("NODE_RED_BRIDGE_USER");
 const bridgeHash = required("NODE_RED_BRIDGE_PASSWORD_SCRYPT");
-const hmiUser = required("NODE_RED_HMI_USER");
-const hmiHash = required("NODE_RED_HMI_PASSWORD_SCRYPT");
 
 function passwordMatches(password, stored) {
   const parts = stored.split(":");
@@ -43,13 +41,8 @@ function checkBasicAuth(req, res, next, user, hash, realm) {
 function protectHttpNodes(req, res, next) {
   const path = (req.originalUrl || "").split("?", 1)[0];
   const hmi = ["/plc/hmi", "/plc/hmi/", "/plc/hmi/status", "/plc/hmi/control"].includes(path);
-  return checkBasicAuth(req, res, next, hmi ? hmiUser : bridgeUser, hmi ? hmiHash : bridgeHash, hmi ? "Node-RED HMI" : "PLC bridge");
-}
-
-function protectHmiPage(req, res, next) {
-  const path = (req.originalUrl || "").split("?", 1)[0];
-  if (path !== "/" && path !== "/index.html") return next();
-  return checkBasicAuth(req, res, next, hmiUser, hmiHash, "Node-RED HMI");
+  if (hmi) return next();
+  return checkBasicAuth(req, res, next, bridgeUser, bridgeHash, "PLC bridge");
 }
 
 module.exports = {
@@ -60,7 +53,7 @@ module.exports = {
   httpAdminRoot: "/editor",
   httpNodeRoot: "/plc",
   httpNodeMiddleware: protectHttpNodes,
-  httpStatic: [{ path: "/data/hmi", root: "/", middleware: protectHmiPage }],
+  httpStatic: [{ path: "/data/hmi", root: "/" }],
   adminAuth: {
     type: "credentials",
     users: [{
