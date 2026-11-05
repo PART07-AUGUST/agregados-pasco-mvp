@@ -27,13 +27,18 @@
     .reading { background: #0c1d26; border-radius: 12px; padding: 16px; }
     .reading strong { display: block; font-size: 28px; margin-top: 7px; letter-spacing: -.04em; }
     .reading small { color: #9db4ba; font-size: 12px; }
-    .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    button { min-height: 66px; border: 0; border-radius: 14px; font: inherit; font-size: 20px; font-weight: 800; cursor: pointer; transition: transform .12s ease, opacity .12s ease; }
+    button { border: 0; border-radius: 14px; font: inherit; cursor: pointer; transition: transform .12s ease, opacity .12s ease; }
     button:active { transform: scale(.98); }
     button:focus-visible { outline: 3px solid #ffffff; outline-offset: 3px; }
     button:disabled { cursor: not-allowed; opacity: .48; }
-    .on { color: #06221d; background: #69e4ae; }
-    .off { color: #f1f8f8; background: #344b58; }
+    .switch-control { width: 100%; min-height: 90px; padding: 16px; display: flex; align-items: center; gap: 18px; color: #e9f3f5; background: #0c1d26; text-align: left; border: 1px solid #38505a; }
+    .switch-track { flex: 0 0 auto; width: 78px; height: 46px; padding: 5px; border-radius: 30px; background: #536975; transition: background .2s ease, box-shadow .2s ease; }
+    .switch-thumb { display: block; width: 36px; height: 36px; border-radius: 50%; background: white; box-shadow: 0 2px 8px #0005; transition: transform .2s ease; }
+    .switch-control[data-on="true"] .switch-track { background: #55d99d; box-shadow: 0 0 0 5px #55d99d20; }
+    .switch-control[data-on="true"] .switch-thumb { transform: translateX(32px); }
+    .switch-copy { display: grid; gap: 2px; }
+    .switch-copy strong { font-size: 25px; line-height: 1; }
+    .switch-copy small { color: #9db4ba; font-size: 13px; }
     .feedback { min-height: 24px; margin: 16px 0 0; font-size: 14px; color: #a9dacf; }
     .feedback.error { color: #ffaaa6; }
     .foot { margin-top: 28px; color: #819aa4; font-size: 12px; line-height: 1.5; }
@@ -63,20 +68,21 @@
 
     <section class="card" aria-labelledby="control-heading">
       <p class="eyebrow" id="control-heading">Enviar comando</p>
-      <div class="buttons">
-        <button class="on" id="turn-on" type="button" disabled>ON</button>
-        <button class="off" id="turn-off" type="button" disabled>OFF</button>
-      </div>
+      <button class="switch-control" id="power-switch" type="button" role="switch" aria-label="Señal de prueba" aria-checked="false" data-on="false" disabled>
+        <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+        <span class="switch-copy"><strong id="switch-state">OFF</strong><small>Toca para cambiar</small></span>
+      </button>
       <p class="feedback" id="feedback" role="status" aria-live="polite"></p>
     </section>
 
-    <p class="foot">Demostración con variables simuladas. Los botones no accionan equipos físicos. La pantalla se actualiza automáticamente cada 2,5 segundos.</p>
+    <p class="foot">Demostración con variables simuladas. El interruptor no acciona equipos físicos. La pantalla se actualiza automáticamente cada 2,5 segundos.</p>
   </main>
   <script>
     const endpoint = "/plc/hmi";
     const $ = (id) => document.getElementById(id);
     let online = false;
     let sending = false;
+    let requested = false;
 
     function showFeedback(message, error = false) {
       $("feedback").textContent = message;
@@ -85,6 +91,7 @@
 
     function render(data) {
       online = data.online === true;
+      requested = data.desired === true;
       $("connection-dot").className = "dot " + (online ? "online" : "offline");
       $("connection-text").textContent = online ? "OpenPLC conectado" : "OpenPLC desconectado";
       $("last-seen").textContent = data.lastSeen
@@ -94,8 +101,10 @@
       const confirmed = data.lastAck && data.lastAck.version === data.version && data.lastAck.desired === data.desired && data.lastAck.observed === data.desired;
       $("observed").textContent = online && confirmed ? (data.lastAck.observed ? "ON" : "OFF") : "—";
       $("requested").textContent = "Comando solicitado: " + (data.desired ? "ON" : "OFF") + (online && !confirmed ? " · esperando confirmación" : "");
-      $("turn-on").disabled = !online || sending;
-      $("turn-off").disabled = !online || sending;
+      $("power-switch").dataset.on = String(requested);
+      $("power-switch").setAttribute("aria-checked", String(requested));
+      $("switch-state").textContent = requested ? "ON" : "OFF";
+      $("power-switch").disabled = !online || sending;
       if (!online) showFeedback("Inicia OpenPLC y el puente local para habilitar los controles.", true);
       else if (!sending && confirmed) showFeedback("Comando confirmado por OpenPLC.");
     }
@@ -109,8 +118,7 @@
         online = false;
         $("connection-dot").className = "dot offline";
         $("connection-text").textContent = "Sin conexión con Render";
-        $("turn-on").disabled = true;
-        $("turn-off").disabled = true;
+        $("power-switch").disabled = true;
         showFeedback(error.message, true);
       }
     }
@@ -118,8 +126,7 @@
     async function sendCommand(desired) {
       if (sending || !online) return;
       sending = true;
-      $("turn-on").disabled = true;
-      $("turn-off").disabled = true;
+      $("power-switch").disabled = true;
       showFeedback("Enviando comando…");
       try {
         const response = await fetch(endpoint + "/control", {
@@ -128,19 +135,21 @@
           body: JSON.stringify({ desired })
         });
         if (!response.ok) throw new Error(response.status === 409 ? "OpenPLC está desconectado." : "No se pudo enviar el comando (HTTP " + response.status + ").");
+        requested = desired;
+        $("power-switch").dataset.on = String(desired);
+        $("power-switch").setAttribute("aria-checked", String(desired));
+        $("switch-state").textContent = desired ? "ON" : "OFF";
         showFeedback("Comando enviado; esperando confirmación de OpenPLC…");
         await refresh();
       } catch (error) {
         showFeedback(error.message, true);
       } finally {
         sending = false;
-        $("turn-on").disabled = !online;
-        $("turn-off").disabled = !online;
+        $("power-switch").disabled = !online;
       }
     }
 
-    $("turn-on").addEventListener("click", () => sendCommand(true));
-    $("turn-off").addEventListener("click", () => sendCommand(false));
+    $("power-switch").addEventListener("click", () => sendCommand(!requested));
     refresh();
     setInterval(refresh, 2500);
   </script>

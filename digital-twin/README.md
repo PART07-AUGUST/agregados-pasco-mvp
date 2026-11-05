@@ -74,7 +74,7 @@ Docker ejecuta **solo OpenPLC**. Después de iniciar Docker Desktop, `docker com
 
 ## 5. Panel para teléfono
 
-Abre `https://<servicio>.onrender.com/` en el navegador del teléfono, incluso usando datos móviles. El panel abre sin usuario ni contraseña, actualiza el estado y la señal cada 2,5 segundos, permite enviar ON/OFF y muestra la confirmación de OpenPLC. Los botones quedan deshabilitados cuando el PLC está desconectado. Para esta etapa controlan únicamente variables simuladas; cualquier persona con el enlace puede enviar ON/OFF a esas variables de prueba.
+Abre `https://<servicio>.onrender.com/` en el navegador del teléfono, incluso usando datos móviles. El panel abre sin usuario ni contraseña, actualiza el estado y la señal cada 2,5 segundos y muestra la confirmación de OpenPLC. Un solo interruptor queda verde en ON y gris en OFF; se deshabilita cuando el PLC está desconectado. Para esta etapa controla únicamente variables simuladas; cualquier persona con el enlace puede cambiar ese interruptor de prueba.
 
 Para comprobar el contrato HTTP sin abrir el editor, ejecuta `uv run --project digital-twin/bridge python digital-twin/check_api.py https://<servicio>.onrender.com`. Para activar las pruebas desde la API protegida del Editor, usa `uv run --project digital-twin/bridge python digital-twin/set_command.py https://<servicio>.onrender.com on` y luego `off`; el puente debe estar en marcha para obtener la confirmación del PLC.
 
